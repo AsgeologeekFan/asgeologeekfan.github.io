@@ -1,21 +1,9 @@
 ---
-layout: post
-title: "Zotero 使用手册"
-# excerpt: "A Guide for Zotero"
+title: 'Zotero教程'
 date: 2022-05-04
-permalink: /posts/ZoteroGuide
-categories:
-  - 教程
-  - 科研
-  - 软件 
+permalink: /posts/2022/05/blog-post-1/
 tags:
   - 教程
-  - 科研
-toc: true
-toc_label: "Table of Contents"
-toc_icon: "cog"
-header:
-  teaser: "https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205042035494.svg"
 ---
 
 
