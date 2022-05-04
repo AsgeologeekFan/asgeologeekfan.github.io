@@ -1,11 +1,22 @@
 ---
-title: 'Zotero教程'
+layout: post
+title: "Zotero 使用手册"
+# excerpt: "A Guide for Zotero"
 date: 2022-05-04
-permalink: /posts/2022/05/blog-post-1/
+permalink: /posts/ZoteroGuide
+categories:
+  - 教程
+  - 科研
+  - 软件 
 tags:
   - 教程
+  - 科研
+# toc: true
+toc_label: "Table of Contents"
+toc_icon: "cog"
+header:
+  teaser: "https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205042035494.svg"
 ---
-
 
 # 账号注册及软件安装
 1. [官网](https://www.zotero.org/)  注册账号并下载客户端
@@ -192,4 +203,4 @@ Library Catalog栏自动生成中科院分区，Call Number栏自动生成影响
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041227102.png)
 
 
-Author: [AsgeologeekFan](https://asgeologeekfan.github.io/)    Published Date: May 04, 2022
+
