@@ -1,5 +1,5 @@
 ---
-layout: post
+
 title: "Zotero 使用手册"
 # excerpt: "A Guide for Zotero"
 date: 2022-05-04
@@ -11,9 +11,11 @@ categories:
 tags:
   - 教程
   - 科研
-# toc: true
-toc_label: "Table of Contents"
+
+toc: true
+toc_label: "目录"
 toc_icon: "cog"
+
 header:
   teaser: "https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205042035494.svg"
 ---
