@@ -12,6 +12,7 @@ source "https://rubygems.org"
 gem "webrick"
 gem "github-pages", group: :jekyll_plugins
 
+
 # To upgrade, run `bundle update`.
 
 # gem "jekyll"
@@ -27,5 +28,6 @@ gem 'wdm', '>= 0.1.0' if Gem.win_platform?
 #
 # If you have any other plugins, put them here!
 # Cf. https://jekyllrb.com/docs/plugins/installation/
+
 group :jekyll_plugins do
 end
