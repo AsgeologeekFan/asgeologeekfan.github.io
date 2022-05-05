@@ -15,6 +15,7 @@ tags:
 toc: true
 toc_label: "目录"
 toc_icon: "cog"
+toc_sticky: true
 
 header:
   teaser: "https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205042035494.svg"
