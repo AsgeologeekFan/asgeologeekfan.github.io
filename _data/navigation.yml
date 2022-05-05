@@ -2,13 +2,13 @@
 main:
   # - title: "Quick-Start Guide"
   #   url: https://mmistakes.github.io/minimal-mistakes/docs/quick-start-guide/
-  # - title: "About"
-  #   url: https://mmistakes.github.io/minimal-mistakes/about/
   # - title: "Sample Collections"
   #   url: /collection-archive/
-  #- title: "Posts"
-  #   url: https://asgeologeekfan.github.io/posts/
-  # - title: "Gallery"
-  #   url: /gallery/
-  #- title: "AboutMe"
-  #   url: /about/
+   - title: "Research"
+     url: https://asgeologeekfan.github.io/research/
+   - title: "Posts"
+     url: https://asgeologeekfan.github.io/posts/
+   - title: "Gallery"
+     url: https://asgeologeekfan.github.io/gallery/
+   - title: "AboutMe"
+     url: https://asgeologeekfan.github.io/about/
