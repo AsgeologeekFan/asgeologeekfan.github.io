@@ -65,7 +65,11 @@ header:
 - [Zotero Citation Counts Manager](https://github.com/eschnett/zotero-citationcounts) 自动更新引用次数（可选）
 - [打包下载链接](https://pan.baidu.com/s/1HGfWWL7SUFsya6zMUFCJ0Q) 提取码：zb7k
 
+按下图指示加载 .xpi 文件
 
+![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205052056639.png)
+
+![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205052057128.png)
 
 
 ## Zotfile配置
@@ -214,4 +218,3 @@ Library Catalog栏自动生成中科院分区，Call Number栏自动生成影响
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041227102.png)
 
 
-Author: [AsgeologeekFan](https://asgeologeekfan.github.io/)    Published Date: May 04, 2022
