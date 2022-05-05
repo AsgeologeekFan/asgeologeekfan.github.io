@@ -20,6 +20,10 @@ toc_sticky: true
 header:
   teaser: "https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205042035494.svg"
 ---
+这篇文章介绍了Zotero和相关必备插件，可以按照本文给出的操作步骤进行设置。
+
+
+
 
 # 账号注册及软件安装
 1. [官网](https://www.zotero.org/)  注册账号并下载客户端
@@ -54,16 +58,19 @@ header:
 
 # 插件安装及配置
 
-- [Zotfile](http://zotfile.com/)  文件重命名同步
-- [Zotero PDF Translate](https://github.com/windingwind/zotero-pdf-translate)  划词翻译
-- [Zotero IF](https://github.com/qnscholar/zotero-if)   自动更新期刊影响因子和中科院分区
-- [Jasminum](https://github.com/l0o0/jasminum) 识别中文元数据
-- [Zotero Citation Counts Manager](https://github.com/eschnett/zotero-citationcounts) 自动更新引用次数
+- **[Zotfile](http://zotfile.com/)  文件重命名同步（必装）**
+- **[Jasminum](https://github.com/l0o0/jasminum) 识别中文文献的元数据（必装）**
+- [Zotero PDF Translate](https://github.com/windingwind/zotero-pdf-translate)  划词翻译（可选）
+- [Zotero IF](https://github.com/qnscholar/zotero-if)   自动更新期刊影响因子和中科院分区（可选）
+- [Zotero Citation Counts Manager](https://github.com/eschnett/zotero-citationcounts) 自动更新引用次数（可选）
 - [打包下载链接](https://pan.baidu.com/s/1HGfWWL7SUFsya6zMUFCJ0Q) 提取码：zb7k
 
 
+
+
 ## Zotfile配置
-注意红框中的内容 
+注意红框中的内容
+
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041220776.png)
 
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041220078.png)
@@ -71,18 +78,6 @@ header:
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041220643.png)
 
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041220144.png)
-
-
-## Zotero PDF Translate配置
-![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041227170.png)
-
-![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041221728.png)
-
-
-## Zotero IF配置
-
-![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041222889.png)
-
 
 ## Jasminum配置
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041222762.png)
@@ -103,6 +98,19 @@ header:
 回到zotero设置好安装目录即可
 
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041223890.png)
+
+
+
+## Zotero PDF Translate配置
+![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041227170.png)
+
+![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041221728.png)
+
+
+## Zotero IF配置
+
+![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041222889.png)
+
 
 
 ## Zotero Citation Counts Manager 配置
@@ -206,4 +214,4 @@ Library Catalog栏自动生成中科院分区，Call Number栏自动生成影响
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041227102.png)
 
 
-
+Author: [AsgeologeekFan](https://asgeologeekfan.github.io/)    Published Date: May 04, 2022
