@@ -1,16 +1,16 @@
 ---
-
 title: "Zotero 使用手册"
 # excerpt: "A Guide for Zotero"
 date: 2022-05-04
-permalink: /posts/ZoteroGuide
+permalink: /posts/zotero-guide
+last_modified_at: 2022-05-06
 categories:
   - 教程
   - 科研
   - 软件 
 tags:
-  - 教程
-  - 科研
+  # - 教程
+  # - 科研
 
 toc: true
 toc_label: "目录"
