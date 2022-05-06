@@ -98,9 +98,13 @@ analytics:
   google_analytics:      : G-T17ZLKL8KQ
   google:
     tracking_id          : "G-T17ZLKL8KQ"
+    google_analytics:    : "G-T17ZLKL8KQ"
     anonymize_ip         : # true, false (default)
 
+google_analytics:      : G-T17ZLKL8KQ
+google_analytics:      : <G-T17ZLKL8KQ>
 google_analytics:      : "G-T17ZLKL8KQ"
+
 # Site Author
 author:
   name             : "Haotian Fan"
