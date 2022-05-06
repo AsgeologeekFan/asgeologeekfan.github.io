@@ -125,7 +125,7 @@ author:
     - label: "ORCID iD"
       icon: "fab fa-fw fa-orcid"
       url: "https://orcid.org/0000-0002-7671-8890"
-     - label: "ResearchGate"
+    - label: "ResearchGate"
       icon: "fas fa-fw fa-researchgate"
       url: "https://www.researchgate.net/profile/Haotian-Fan-3"
     - label: "Google Scholar"
