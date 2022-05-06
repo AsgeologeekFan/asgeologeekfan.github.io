@@ -1,7 +1,7 @@
 ---
 title: "Blog"
-layout: single
+layout: posts
 permalink: /blog/
 ---
 
-I am still building it!
+I am still building blog!

@@ -7,4 +7,4 @@ title: "Research"
 permalink: /research/
 ---
 
-I am still building it.
+I am still building research.

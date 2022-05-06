@@ -4,4 +4,4 @@ layout: single
 permalink: /gallery/
 ---
 
-I am still building it!
+I am still building gallery!
