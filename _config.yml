@@ -238,6 +238,7 @@ plugins:
   - jekyll-feed
   - jekyll-include-cache
   - jekyll-google_cse
+  - jekyll-remote-theme
   - jemoji
 
 # mimic GitHub Pages with --safe
