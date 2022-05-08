@@ -6,6 +6,6 @@ permalink: /gallery/
 
 I am still building gallery!
 
-[test1](/line-simple.html)
+[test1](/scatter-aqi-color.html)
 
 [test2](/scatter-aqi-color.html)
