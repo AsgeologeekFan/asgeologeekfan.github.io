@@ -7,10 +7,10 @@ main:
    - title: "Home"
      url: https://asgeologeekfan.github.io/
    - title: "Research"
-     url: https://asgeologeekfan.github.io/research/
+     url: /research
    - title: "Blog"
-     url: https://asgeologeekfan.github.io/blog/
+     url: /blog
    - title: "Categories"
-     url: https://asgeologeekfan.github.io/categories/
+     url: /categories
    - title: "Gallery"
-     url: https://asgeologeekfan.github.io/gallery/
+     url: /gallery
