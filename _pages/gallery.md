@@ -15,6 +15,6 @@ I am still building gallery!
   id="chart"
   src="/scatter-aqi-color.html"
   frameborder="0" 
-  scrolling="no" 
+  scrolling="yes" 
   style="width: 100%">
 </iframe>
