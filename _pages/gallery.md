@@ -2,7 +2,7 @@
 title: "Gallery"
 layout: single
 permalink: /gallery/
-plchart: true
+
 ---
 
 I am still building gallery!
