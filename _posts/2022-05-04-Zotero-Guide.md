@@ -6,8 +6,7 @@ permalink: /posts/zotero-guide
 last_modified_at: 2022-05-06
 categories:
   - 教程
-  - 科研
-  - 软件 
+  - 科研 
 tags:
   # - 教程
   # - 科研
