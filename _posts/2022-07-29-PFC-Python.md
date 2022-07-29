@@ -15,8 +15,8 @@ toc_label: "目录"
 toc_icon: "cog"
 toc_sticky: False
 
-header:
-  teaser: "https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202206241629640.png"
+#header:
+#  teaser: "https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202206241629640.png"
 ---
 介绍了在PFC中安装Python第三方库的步骤。
 
