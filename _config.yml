@@ -24,8 +24,8 @@ description              : "An amazing website."
 url                      : "https://asgeologeekfan.github.io"
 baseurl                  : # the subpath of your site, e.g. "/blog"
 repository               : "AsgeologeekFan/asgeologeekfan.github.io"
-teaser                   : "/assets/images/logo.png"
-logo                     : # "/assets/images/logo.png"
+teaser                   : # "/assets/images/logo.png"  teaser of each post
+logo                     : # "/assets/images/logo.png"  biside the title
 masthead_title           : # overrides the website title displayed in the masthead, use " " for no title
 # breadcrumbs            : false # true, false (default)
 words_per_minute         : 200
