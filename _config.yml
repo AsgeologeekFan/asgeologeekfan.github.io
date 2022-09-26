@@ -141,8 +141,8 @@ author:
       icon: "fab fa-fw fa-weixin"
       url: "/assets/images/wechat.jpg"
     - label: "Donate"
-      icon: "fa-light fa-hands-holding-dollar"
-      url: "/_pages/donate.md"
+      icon: "far fa-hand-heart"
+      url: "/sponsor.html"
 
 # Site Footer
 footer:
