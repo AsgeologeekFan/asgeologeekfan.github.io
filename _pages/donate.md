@@ -12,6 +12,6 @@ permalink: /sponsor.html
 
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202209261600215.jpg#pic_center =250)
 
-PayPal
+[PayPal](https://paypal.me/asgeologeekfan?country.x=C2&locale.x=zh_XC)
 
-![https://paypal.me/asgeologeekfan?country.x=C2&locale.x=zh_XC](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202209261616127.png)
+![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202209261616127.png)
