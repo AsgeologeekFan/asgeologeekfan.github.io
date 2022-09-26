@@ -141,7 +141,7 @@ author:
       icon: "fab fa-fw fa-weixin"
       url: "/assets/images/wechat.jpg"
     - label: "Donate"
-      icon: "far fa-hand-heart"
+      icon: "fab fa-fw fa-hand-heart"
       url: "/sponsor.html"
 
 # Site Footer
