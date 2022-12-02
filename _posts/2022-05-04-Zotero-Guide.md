@@ -3,7 +3,7 @@ title: "Zotero 使用手册"
 # excerpt: "A Guide for Zotero"
 date: 2022-05-04
 permalink: /posts/zotero-guide
-last_modified_at: 2022-05-06
+last_modified_at: 2022-12-02
 categories:
   - 教程
   - 科研 
@@ -62,7 +62,12 @@ header:
 - [Zotero PDF Translate](https://github.com/windingwind/zotero-pdf-translate)  划词翻译（可选）
 - [Zotero IF](https://github.com/qnscholar/zotero-if)   自动更新期刊影响因子和中科院分区（可选）
 - [Zotero Citation Counts Manager](https://github.com/eschnett/zotero-citationcounts) 自动更新引用次数（可选）
-- [打包下载链接](https://pan.baidu.com/s/1HGfWWL7SUFsya6zMUFCJ0Q) 提取码：zb7k
+- [课题组学位论文引用样式](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/file/ssr-thesis.csl) 
+  > 1.区分中文和西文的“等”和“et al.”
+  > 2.西文名缩写，名在前姓在后
+  > 3.不显示 DOI
+  > 4.网页显示URL
+- [打包下载链接](https://pan.baidu.com/s/1MYMKx_oBy9yMIo5ZgIsl3g?pwd=iav2) 提取码：iav2 
 
 按下图指示加载 .xpi 文件
 
@@ -123,13 +128,13 @@ header:
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041223202.png)
 
 
-至此，设置完成，下面开始讲使用。
+至此，设置完成，下面是可供参考的实际使用流程。
 
 ---
 
 # 工作流程
 ## 下载文献
-- 无论中文还是英文均下载pdf文件至`~/Download/Literature`文件夹，从此可以抛弃caj格式。
+- 无论中文还是英文均下载pdf文件至`~/Download/Literature`文件夹，不建议下载caj格式。
 - 英文文献命名随意，中文文献命名为 `题目_作者.pdf`   
 - Tips：可通过[知网海外版](https://chn.oversea.cnki.net/index/) 来下载学位论文的pdf版本
 
@@ -215,5 +220,8 @@ Library Catalog栏自动生成中科院分区，Call Number栏自动生成影响
 
 ## 操作流程
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041227102.png)
+
+# 更新日志
+2022.12.02 添加了课题组写作规范中推荐的样式下载链接
 
 
