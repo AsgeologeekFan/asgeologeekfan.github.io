@@ -1,7 +1,7 @@
 ---
 title: "Gallery"
-layout: single
-permalink: /gallery/
+layout: plogs
+permalink: /plog/
 
 ---
 
