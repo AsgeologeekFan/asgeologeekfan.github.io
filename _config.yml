@@ -318,3 +318,16 @@ defaults:
       layout: single
       author_profile: true
       comments: true
+      
+  # _plogs
+  - scope:
+      path: ""
+      type: plogs
+    values:
+      layout: single
+      author_profile: # true
+      show_date: true
+      read_time: # true
+      comments: true
+      share: # true
+      related: true
