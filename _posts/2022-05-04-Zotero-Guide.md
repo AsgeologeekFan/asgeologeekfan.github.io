@@ -216,7 +216,5 @@ Library Catalog栏自动生成中科院分区，Call Number栏自动生成影响
 ## 操作流程
 ![](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202205041227102.png)
 
-# 更新日志
-2022.12.02 添加了课题组写作规范中推荐的样式下载链接
 
 
