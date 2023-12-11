@@ -60,14 +60,9 @@ header:
 - **[Zotfile](http://zotfile.com/)  文件重命名同步（必装）**
 - **[Jasminum](https://github.com/l0o0/jasminum) 识别中文文献的元数据（必装）**
 - [Zotero PDF Translate](https://github.com/windingwind/zotero-pdf-translate)  划词翻译（可选）
-- [Zotero IF](https://github.com/qnscholar/zotero-if)   自动更新期刊影响因子和中科院分区（可选）
 - [Zotero Citation Counts Manager](https://github.com/eschnett/zotero-citationcounts) 自动更新引用次数（可选）
-- [课题组学位论文引用样式](https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/file/ssr-thesis.csl) 
-  > 1.区分中文和西文的“等”和“et al.”
-  > 2.西文名缩写，名在前姓在后
-  > 3.不显示 DOI
-  > 4.网页显示URL
-- [打包下载链接](https://pan.baidu.com/s/1MYMKx_oBy9yMIo5ZgIsl3g?pwd=iav2) 提取码：iav2 
+- ~~[Zotero IF](https://github.com/qnscholar/zotero-if)   自动更新期刊影响因子和中科院分区（不再推荐）~~
+- [打包下载链接](https://pan.baidu.com/s/1QDSewHki5BZv8l9Ueltz7Q?pwd=pk3y) 提取码：pk3y
 
 按下图指示加载 .xpi 文件
 
