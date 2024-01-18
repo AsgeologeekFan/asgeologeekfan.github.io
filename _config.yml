@@ -102,7 +102,7 @@ analytics:
 # Site Author
 author:
   name             : "Haotian Fan"
-  avatar           : "/assets/images/2_crop.jpg"
+  avatar           : https://asgeologeekfan-images.oss-cn-hangzhou.aliyuncs.com/img/202401182254523.jpg #"/assets/images/2_crop.jpg"
   bio              : "I am a PhD student at Hohai University. Interested in geological engineering and rock mechanics."
   location         : "Nanjing, China"
   email            :
