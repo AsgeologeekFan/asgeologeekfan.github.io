@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 LocalDocDiff - 本地文档查重工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --light-color: #f5f5f5;
+            --dark-color: #333;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #4CAF50;
+            font-size: 1rem;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .upload-section {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .upload-section h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .upload-section p {
+            color: #555;
+        }
+        
+        .upload-area {
+            border: 2px dashed #4CAF50;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin: 15px 0;
+            background: #f9f9f9;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            background: #f0f0f0;
+            border-color: #45a049;
+        }
+        
+        .upload-area.dragover {
+            background: #e8f5e9;
+            border-color: #2196F3;
+        }
+        
+        .upload-area p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .file-list {
+            margin: 15px 0;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .file-name {
+            flex-grow: 1;
+            color: #333;
+        }
+        
+        .file-size {
+            color: #666;
+            margin-right: 10px;
+        }
+        
+        .remove-btn {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 8px;
+            cursor: pointer;
+        }
+        
+        .params-section {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .params-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .param-group {
+            margin-bottom: 15px;
+        }
+        
+        .param-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .param-value {
+            display: inline-block;
+            width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="range"] {
+            flex-grow: 1;
+        }
+        
+        .slider-container span {
+            color: #666;
+        }
+        
+        .param-group small {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        
+        .action-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 0 10px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #0b7dda;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .progress-section {
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .progress-details {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .results-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .summary {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .summary h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .summary p {
+            color: #555;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex: 1;
+            margin: 0 10px;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-item div:last-child {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .match-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .match-type {
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: white;
+        }
+        
+        .duplicate {
+            background-color: var(--danger-color);
+        }
+        
+        .similar {
+            background-color: var(--warning-color);
+        }
+        
+        .similarity-score {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .doc-info {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border-left: 3px solid var(--secondary-color);
+        }
+        
+        .doc-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .text-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #9e9e9e;
+            margin-top: 8px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #555;
+        }
+        
+        .toggle-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+            font-weight: 600;
+        }
+        
+        .toggle-btn:hover {
+            background: #45a049;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #777;
+        }
+        
+        .footer p {
+            margin-bottom: 10px;
+        }
+        
+        .privacy-notice {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .privacy-notice h3 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        
+        .privacy-notice p {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: var(--danger-color);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .save-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .results-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .tech-badge {
+            display: inline-block;
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 0 5px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 LocalDocDiff</h1>
+            <p>本地文档查重工具 | 您的隐私，我们绝不触碰</p>
+            <div class="subtitle">🚀 基于TF-IDF + Cosine Similarity算法 | 💻 100%本地处理 | 🔐 零数据上传</div>
+        </div>
+        
+        <div class="upload-section">
+            <h2>📁 上传Word文档</h2>
+            <p>选择或拖拽多个Word文档(.docx)到下方区域</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <p>📎 点击选择文件 或 拖拽文件到这里</p>
+                <input type="file" id="fileInput" multiple accept=".docx" style="display: none;">
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">选择文件</button>
+            </div>
+            
+            <div class="file-list" id="fileList">
+                <!-- 文件列表将在这里显示 -->
+            </div>
+        </div>
+        
+        <div class="params-section">
+            <h2>⚙️ 分析参数设置</h2>
+            
+            <div class="param-group">
+                <label class="param-label">相似度阈值 (<span id="similarValue">0.7</span>)</label>
+                <div class="slider-container">
+                    <span>0.5</span>
+                    <input type="range" id="similarThreshold" min="0.5" max="0.95" step="0.01" value="0.7">
+                    <span>0.95</span>
+                    <span class="param-value" id="similarDisplay">0.70</span>
+                </div>
+                <small>低于此值的文本对不会被标记为相似，0.7~0.8适合中文</small>
+            </div>
+            
+            <div class="param-group">
+                <label class="param-label">完全重复阈值 (<span id="duplicateValue">0.95</span>)</label>
+                <div class="slider-container">
+                    <span>0.8</span>
+                    <input type="range" id="duplicateThreshold" min="0.8" max="0.99" step="0.01" value="0.95">
+                    <span>0.99</span>
+                    <span class="param-value" id="duplicateDisplay">0.95</span>
+                </div>
+                <small>高于此值的文本对会被标记为完全重复，越高越严格（1.0为完全相同）</small>
+            </div>
+            
+            <div class="param-group">
+                <label class="param-label">最小词数</label>
+                <div class="slider-container">
+                    <span>1</span>
+                    <input type="range" id="minWords" min="1" max="20" step="1" value="5">
+                    <span>20</span>
+                    <span class="param-value" id="minWordsDisplay">5</span>
+                </div>
+                <small>词数少于这个值的段落会被忽略</small>
+            </div>
+        </div>
+        
+        <div class="action-section">
+            <button class="btn btn-primary" id="analyzeBtn" disabled>🚀 开始查重分析</button>
+            <button class="btn btn-secondary" id="resetBtn">🔄 重置</button>
+        </div>
+        
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">准备分析...</div>
+            <div class="progress-details" id="progressDetails"></div>
+        </div>
+        
+        <div class="results-section" id="resultsSection">
+            <h2>📋 分析结果</h2>
+            
+            <div class="summary" id="resultsSummary">
+                <!-- 结果摘要将在这里显示 -->
+            </div>
+            
+            <div class="stats" id="resultsStats">
+                <!-- 统计信息将在这里显示 -->
+            </div>
+            
+            <div class="save-section">
+                <div class="results-actions">
+                    <button class="btn btn-success" id="saveHtmlBtn">💾 保存为HTML报告</button>
+                    <button class="btn btn-secondary" id="saveJsonBtn">📊 保存为JSON数据</button>
+                    <button class="btn btn-primary" id="saveTxtBtn">📝 保存为文本报告</button>
+                </div>
+            </div>
+            
+            <div id="matchResults">
+                <!-- 匹配结果将在这里显示 -->
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 LocalDocDiff by <a href="https://www.asgeologeekfan.top" target="_blank" style="color: #4CAF50; text-decoration: none; font-weight: bold;">AsgeologeekFan</a> | <span class="tech-badge">零数据上传</span> <span class="tech-badge">100%本地处理</span></p>
+            <div class="privacy-notice">
+                <h3>🔒 隐私保护声明</h3>
+                <p>LocalDocDiff 完全在您的浏览器中运行，所有文档处理均在本地完成。您的文件永远不会离开您的设备，我们不会收集、存储或传输您的任何数据。这是真正的隐私保护技术，让您完全掌控自己的文档安全。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let uploadedFiles = [];
+        let paragraphs = [];
+        let results = [];
+        let analysisData = {}; // 存储分析数据用于保存
+        
+        // DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileList = document.getElementById('fileList');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressDetails = document.getElementById('progressDetails');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsSummary = document.getElementById('resultsSummary');
+        const resultsStats = document.getElementById('resultsStats');
+        const matchResults = document.getElementById('matchResults');
+        const saveHtmlBtn = document.getElementById('saveHtmlBtn');
+        const saveJsonBtn = document.getElementById('saveJsonBtn');
+        const saveTxtBtn = document.getElementById('saveTxtBtn');
+        
+        // 参数控件
+        const similarThreshold = document.getElementById('similarThreshold');
+        const duplicateThreshold = document.getElementById('duplicateThreshold');
+        const minWords = document.getElementById('minWords');
+        const similarDisplay = document.getElementById('similarDisplay');
+        const duplicateDisplay = document.getElementById('duplicateDisplay');
+        const minWordsDisplay = document.getElementById('minWordsDisplay');
+        const similarValue = document.getElementById('similarValue');
+        const duplicateValue = document.getElementById('duplicateValue');
+        
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 文件选择事件
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // 拖放事件
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleFileDrop);
+            
+            // 参数变化事件
+            similarThreshold.addEventListener('input', updateSimilarDisplay);
+            duplicateThreshold.addEventListener('input', updateDuplicateDisplay);
+            minWords.addEventListener('input', updateMinWordsDisplay);
+            
+            // 按钮事件
+            analyzeBtn.addEventListener('click', startAnalysis);
+            resetBtn.addEventListener('click', resetApp);
+            saveHtmlBtn.addEventListener('click', saveAsHtml);
+            saveJsonBtn.addEventListener('click', saveAsJson);
+            saveTxtBtn.addEventListener('click', saveAsTxt);
+            
+            // 初始化显示值
+            updateSimilarDisplay();
+            updateDuplicateDisplay();
+            updateMinWordsDisplay();
+        }
+        
+        // 更新相似度阈值显示
+        function updateSimilarDisplay() {
+            const value = parseFloat(similarThreshold.value).toFixed(2);
+            similarDisplay.textContent = value;
+            similarValue.textContent = value;
+        }
+        
+        // 更新完全重复阈值显示
+        function updateDuplicateDisplay() {
+            const value = parseFloat(duplicateThreshold.value).toFixed(2);
+            duplicateDisplay.textContent = value;
+            duplicateValue.textContent = value;
+        }
+        
+        // 更新最小词数显示
+        function updateMinWordsDisplay() {
+            minWordsDisplay.textContent = minWords.value;
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            processFiles(files);
+        }
+        
+        // 处理拖放
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+        
+        function handleFileDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            processFiles(files);
+        }
+        
+        // 处理上传的文件
+        function processFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // 检查文件类型
+                if (!file.name.toLowerCase().endsWith('.docx')) {
+                    showError(`文件 "${file.name}" 不是Word文档(.docx)，已跳过`);
+                    continue;
+                }
+                
+                // 检查是否已存在同名文件
+                if (uploadedFiles.some(f => f.name === file.name)) {
+                    showError(`文件 "${file.name}" 已存在，已跳过`);
+                    continue;
+                }
+                
+                uploadedFiles.push(file);
+                addFileToList(file);
+            }
+            
+            // 更新分析按钮状态
+            analyzeBtn.disabled = uploadedFiles.length < 2;
+            
+            // 清空文件输入，以便可以选择相同的文件
+            fileInput.value = '';
+        }
+        
+        // 添加文件到列表
+        function addFileToList(file) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            const fileSize = formatFileSize(file.size);
+            
+            fileItem.innerHTML = `
+                <div class="file-name">${file.name}</div>
+                <div class="file-size">${fileSize}</div>
+                <button class="remove-btn" data-filename="${file.name}">删除</button>
+            `;
+            
+            fileList.appendChild(fileItem);
+            
+            // 添加删除按钮事件
+            const removeBtn = fileItem.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function() {
+                const filename = this.getAttribute('data-filename');
+                removeFile(filename);
+                fileItem.remove();
+            });
+        }
+        
+        // 删除文件
+        function removeFile(filename) {
+            uploadedFiles = uploadedFiles.filter(file => file.name !== filename);
+            analyzeBtn.disabled = uploadedFiles.length < 2;
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 显示错误消息
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            
+            // 插入到上传区域下方
+            uploadArea.parentNode.insertBefore(errorDiv, uploadArea.nextSibling);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 3000);
+        }
+        
+        // 开始分析
+        async function startAnalysis() {
+            if (uploadedFiles.length < 2) {
+                showError('请至少上传两个文档进行比较');
+                return;
+            }
+            
+            // 重置结果
+            paragraphs = [];
+            results = [];
+            analysisData = {};
+            
+            // 显示进度
+            progressSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            analyzeBtn.disabled = true;
+            
+            try {
+                // 步骤1: 读取所有文档
+                await readAllDocuments();
+                
+                // 步骤2: 分析相似度
+                await analyzeSimilarity();
+                
+                // 步骤3: 显示结果
+                displayResults();
+                
+            } catch (error) {
+                showError(`分析过程中出现错误: ${error.message}`);
+                console.error(error);
+            } finally {
+                analyzeBtn.disabled = false;
+            }
+        }
+        
+        // 读取所有文档
+        async function readAllDocuments() {
+            updateProgress(0, `正在处理，请稍后`, `准备读取 ${uploadedFiles.length} 个文档`);
+            
+            for (let i = 0; i < uploadedFiles.length; i++) {
+                const file = uploadedFiles[i];
+                const progress = (i / uploadedFiles.length) * 40;
+                updateProgress(
+                    progress, 
+                    `正在处理，请稍后`, 
+                    `正在读取文档 (${i+1}/${uploadedFiles.length}): ${file.name}`
+                );
+                
+                try {
+                    const fileParagraphs = await readDocxFile(file);
+                    paragraphs.push(...fileParagraphs);
+                } catch (error) {
+                    throw new Error(`读取文件 "${file.name}" 时出错: ${error.message}`);
+                }
+            }
+            
+            updateProgress(
+                40, 
+                `正在处理，请稍后`, 
+                `已成功读取 ${uploadedFiles.length} 个文档，共 ${paragraphs.length} 个段落`
+            );
+        }
+        
+        // 读取单个Word文档
+        async function readDocxFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    const arrayBuffer = event.target.result;
+                    
+                    mammoth.extractRawText({arrayBuffer: arrayBuffer})
+                        .then(function(result) {
+                            const text = result.value;
+                            const fileParagraphs = processDocumentText(text, file.name);
+                            resolve(fileParagraphs);
+                        })
+                        .catch(function(error) {
+                            reject(error);
+                        });
+                };
+                
+                reader.onerror = function() {
+                    reject(new Error('读取文件失败'));
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // 处理文档文本
+        function processDocumentText(text, fileName) {
+            const rawParagraphs = text.split('\n').filter(p => p.trim().length > 0);
+            const processedParagraphs = [];
+            
+            for (let i = 0; i < rawParagraphs.length; i++) {
+                const rawText = rawParagraphs[i].trim();
+                if (!rawText) continue;
+                
+                const processedText = preprocessText(rawText);
+                const wordCount = processedText ? processedText.split(/\s+/).length : 0;
+                
+                processedParagraphs.push({
+                    doc: fileName,
+                    para_idx: i,
+                    raw_text: rawText,
+                    processed_text: processedText,
+                    word_count: wordCount
+                });
+            }
+            
+            return processedParagraphs;
+        }
+        
+        // 文本预处理 - 与Python版本保持一致
+        function preprocessText(text) {
+            // 移除非中文字母数字字符
+            let processed = text.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, " ");
+            // 合并多个空格
+            processed = processed.replace(/\s+/g, " ").trim();
+            
+            // 中文分词 - 简化版，按字切分
+            // 在实际应用中，可以使用更复杂的分词算法
+            if (processed) {
+                // 将中文字符之间添加空格（模拟分词）
+                processed = processed.replace(/([\u4e00-\u9fa5])/g, " $1 ").replace(/\s+/g, " ").trim();
+            }
+            
+            return processed;
+        }
+        
+        // 分析相似度 - 使用TF-IDF和余弦相似度
+        async function analyzeSimilarity() {
+            const duplicateThresholdValue = parseFloat(duplicateThreshold.value);
+            const similarThresholdValue = parseFloat(similarThreshold.value);
+            const minWordsValue = parseInt(minWords.value);
+            
+            updateProgress(40, '正在处理，请稍后', '正在准备分析数据...');
+            
+            // 过滤掉词数太少的段落
+            const validParagraphs = paragraphs.filter(p => p.word_count >= minWordsValue);
+            
+            if (validParagraphs.length < 2) {
+                throw new Error('没有足够多的有效段落进行分析');
+            }
+            
+            // 提取处理后的文本
+            const processedTexts = validParagraphs.map(p => p.processed_text);
+            
+            updateProgress(50, '正在处理，请稍后', '正在构建词汇表和计算词频...');
+            
+            // 计算TF-IDF矩阵
+            const { tfidfMatrix, vectorizer } = computeTfidfMatrix(processedTexts);
+            
+            updateProgress(70, '正在处理，请稍后', '正在计算段落间的余弦相似度...');
+            
+            // 计算余弦相似度矩阵
+            const similarityMatrix = computeCosineSimilarity(tfidfMatrix);
+            
+            updateProgress(80, '正在处理，请稍后', `正在比较 ${validParagraphs.length} 个段落...`);
+            
+            // 查找相似文本
+            for (let i = 0; i < validParagraphs.length; i++) {
+                const progress = 80 + (i / validParagraphs.length) * 15;
+                updateProgress(
+                    progress, 
+                    '正在处理，请稍后', 
+                    `正在分析段落 (${i+1}/${validParagraphs.length})`
+                );
+                
+                for (let j = i + 1; j < validParagraphs.length; j++) {
+                    const para1 = validParagraphs[i];
+                    const para2 = validParagraphs[j];
+                    
+                    // 跳过同一文档内的比较
+                    if (para1.doc === para2.doc) {
+                        continue;
+                    }
+                    
+                    const score = similarityMatrix[i][j];
+                    
+                    // 根据阈值分类
+                    if (score >= duplicateThresholdValue) {
+                        results.push({
+                            type: "完全重复",
+                            score: score,
+                            doc1: para1.doc,
+                            para1: para1.para_idx + 1,
+                            text1: para1.raw_text,
+                            doc2: para2.doc,
+                            para2: para2.para_idx + 1,
+                            text2: para2.raw_text
+                        });
+                    } else if (score >= similarThresholdValue) {
+                        results.push({
+                            type: "相似",
+                            score: score,
+                            doc1: para1.doc,
+                            para1: para1.para_idx + 1,
+                            text1: para1.raw_text,
+                            doc2: para2.doc,
+                            para2: para2.para_idx + 1,
+                            text2: para2.raw_text
+                        });
+                    }
+                }
+            }
+            
+            updateProgress(95, '正在处理，请稍后', '正在准备显示分析结果...');
+            
+            // 存储分析数据用于保存
+            analysisData = {
+                timestamp: new Date().toISOString(),
+                files: uploadedFiles.map(f => f.name),
+                parameters: {
+                    similarThreshold: similarThresholdValue,
+                    duplicateThreshold: duplicateThresholdValue,
+                    minWords: minWordsValue
+                },
+                statistics: {
+                    totalDocuments: uploadedFiles.length,
+                    totalParagraphs: paragraphs.length,
+                    validParagraphs: validParagraphs.length,
+                    totalMatches: results.length,
+                    duplicateCount: results.filter(r => r.type === "完全重复").length,
+                    similarCount: results.filter(r => r.type === "相似").length
+                },
+                results: results
+            };
+        }
+        
+        // 计算TF-IDF矩阵
+        function computeTfidfMatrix(texts) {
+            // 构建词汇表
+            const vocabulary = new Set();
+            texts.forEach(text => {
+                if (text) {
+                    const words = text.split(' ');
+                    words.forEach(word => {
+                        if (word.trim()) {
+                            vocabulary.add(word);
+                        }
+                    });
+                }
+            });
+            
+            const vocabArray = Array.from(vocabulary);
+            const vocabIndex = {};
+            vocabArray.forEach((word, index) => {
+                vocabIndex[word] = index;
+            });
+            
+            // 计算词频(TF)矩阵
+            const tfMatrix = texts.map(text => {
+                const vector = new Array(vocabArray.length).fill(0);
+                if (text) {
+                    const words = text.split(' ');
+                    words.forEach(word => {
+                        if (word.trim() && vocabIndex.hasOwnProperty(word)) {
+                            vector[vocabIndex[word]] += 1;
+                        }
+                    });
+                    
+                    // 归一化词频
+                    const wordCount = words.length;
+                    if (wordCount > 0) {
+                        for (let i = 0; i < vector.length; i++) {
+                            vector[i] /= wordCount;
+                        }
+                    }
+                }
+                return vector;
+            });
+            
+            // 计算逆文档频率(IDF)
+            const n = texts.length;
+            const df = new Array(vocabArray.length).fill(0);
+            
+            tfMatrix.forEach(tfVector => {
+                tfVector.forEach((value, index) => {
+                    if (value > 0) {
+                        df[index]++;
+                    }
+                });
+            });
+            
+            const idfVector = df.map(count => Math.log((n + 1) / (count + 1)) + 1);
+            
+            // 计算TF-IDF矩阵
+            const tfidfMatrix = tfMatrix.map(tfVector => {
+                return tfVector.map((tf, index) => tf * idfVector[index]);
+            });
+            
+            return {
+                tfidfMatrix,
+                vectorizer: { vocabArray, vocabIndex, idfVector }
+            };
+        }
+        
+        // 计算余弦相似度矩阵
+        function computeCosineSimilarity(matrix) {
+            const n = matrix.length;
+            const similarityMatrix = Array(n);
+            
+            for (let i = 0; i < n; i++) {
+                similarityMatrix[i] = Array(n);
+                const vecA = matrix[i];
+                const normA = computeNorm(vecA);
+                
+                for (let j = 0; j < n; j++) {
+                    if (i === j) {
+                        similarityMatrix[i][j] = 1.0;
+                    } else if (j < i) {
+                        // 利用对称性
+                        similarityMatrix[i][j] = similarityMatrix[j][i];
+                    } else {
+                        const vecB = matrix[j];
+                        const normB = computeNorm(vecB);
+                        
+                        if (normA === 0 || normB === 0) {
+                            similarityMatrix[i][j] = 0;
+                        } else {
+                            const dotProduct = computeDotProduct(vecA, vecB);
+                            similarityMatrix[i][j] = dotProduct / (normA * normB);
+                        }
+                    }
+                }
+            }
+            
+            return similarityMatrix;
+        }
+        
+        // 计算向量范数
+        function computeNorm(vector) {
+            let sum = 0;
+            for (let i = 0; i < vector.length; i++) {
+                sum += vector[i] * vector[i];
+            }
+            return Math.sqrt(sum);
+        }
+        
+        // 计算向量点积
+        function computeDotProduct(vecA, vecB) {
+            let dotProduct = 0;
+            for (let i = 0; i < vecA.length; i++) {
+                dotProduct += vecA[i] * vecB[i];
+            }
+            return dotProduct;
+        }
+        
+        // 显示结果
+        function displayResults() {
+            updateProgress(100, '分析完成！', '分析已完成，正在显示结果...');
+            
+            // 更新摘要
+            const duplicateCount = results.filter(r => r.type === "完全重复").length;
+            const similarCount = results.filter(r => r.type === "相似").length;
+            
+            resultsSummary.innerHTML = `
+                <h3>分析概要</h3>
+                <p>本次分析共检测了 <strong>${uploadedFiles.length}</strong> 个文档，发现 <strong>${results.length}</strong> 处文本匹配。</p>
+                <p>使用参数：相似度阈值 ${similarThreshold.value}，完全重复阈值 ${duplicateThreshold.value}，最小词数 ${minWords.value}</p>
+            `;
+            
+            // 更新统计信息
+            resultsStats.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-number">${duplicateCount}</div>
+                    <div>完全重复</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${similarCount}</div>
+                    <div>相似文本</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${uploadedFiles.length}</div>
+                    <div>分析文档数</div>
+                </div>
+            `;
+            
+            // 显示匹配结果
+            if (results.length === 0) {
+                matchResults.innerHTML = '<p>未发现重复或相似的文本。</p>';
+            } else {
+                let matchHTML = '<h3>详细匹配结果</h3>';
+                
+                // 按相似度排序
+                const sortedResults = [...results].sort((a, b) => b.score - a.score);
+                
+                sortedResults.forEach((result, index) => {
+                    const typeClass = result.type === "完全重复" ? "duplicate" : "similar";
+                    const shortText1 = result.text1.length > 200 ? result.text1.substring(0, 200) + "..." : result.text1;
+                    const shortText2 = result.text2.length > 200 ? result.text2.substring(0, 200) + "..." : result.text2;
+                    
+                    matchHTML += `
+                        <div class="match-item">
+                            <div class="match-header">
+                                <span class="match-type ${typeClass}">#${index+1} ${result.type}</span>
+                                <span class="similarity-score">相似度: ${result.score.toFixed(3)}</span>
+                            </div>
+                            
+                            <div class="doc-info">
+                                <div class="doc-title">📄 文档A: ${result.doc1} (段落 ${result.para1})</div>
+                                <div class="text-content" id="text1_${index}">${shortText1}</div>
+                                ${result.text1.length > 200 ? `<button class="toggle-btn" onclick="toggleFullText('text1_${index}', '${result.text1.replace(/'/g, "\\'")}', this)">展开全文</button>` : ''}
+                            </div>
+                            
+                            <div class="doc-info">
+                                <div class="doc-title">📄 文档B: ${result.doc2} (段落 ${result.para2})</div>
+                                <div class="text-content" id="text2_${index}">${shortText2}</div>
+                                ${result.text2.length > 200 ? `<button class="toggle-btn" onclick="toggleFullText('text2_${index}', '${result.text2.replace(/'/g, "\\'")}', this)">展开全文</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                matchResults.innerHTML = matchHTML;
+            }
+            
+            // 显示结果区域
+            resultsSection.style.display = 'block';
+            
+            // 滚动到结果区域
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 切换全文显示
+        function toggleFullText(elementId, fullText, button) {
+            const element = document.getElementById(elementId);
+            
+            if (element.textContent.length < fullText.length) {
+                element.textContent = fullText;
+                button.textContent = '收起文本';
+            } else {
+                const shortText = fullText.length > 200 ? fullText.substring(0, 200) + "..." : fullText;
+                element.textContent = shortText;
+                button.textContent = '展开全文';
+            }
+        }
+        
+        // 更新进度
+        function updateProgress(percent, text, details = '') {
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = text;
+            progressDetails.textContent = details;
+        }
+        
+        // 保存为HTML报告
+        function saveAsHtml() {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `文档查重报告_${timestamp}.html`;
+            
+            // 创建完整的HTML报告
+            const htmlContent = generateHtmlReport();
+            
+            // 创建下载链接
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 生成HTML报告
+        function generateHtmlReport() {
+            const duplicateCount = results.filter(r => r.type === "完全重复").length;
+            const similarCount = results.filter(r => r.type === "相似").length;
+            
+            let resultsHtml = '';
+            if (results.length > 0) {
+                const sortedResults = [...results].sort((a, b) => b.score - a.score);
+                
+                sortedResults.forEach((result, index) => {
+                    resultsHtml += `
+                    <div class="match-item">
+                        <div class="match-header">
+                            <span class="match-type ${result.type === "完全重复" ? "duplicate" : "similar"}">#${index+1} ${result.type}</span>
+                            <span class="similarity-score">相似度: ${result.score.toFixed(3)}</span>
+                        </div>
+                        
+                        <div class="doc-info">
+                            <div class="doc-title">📄 文档A: ${result.doc1} (段落 ${result.para1})</div>
+                            <div class="text-content">${result.text1}</div>
+                        </div>
+                        
+                        <div class="doc-info">
+                            <div class="doc-title">📄 文档B: ${result.doc2} (段落 ${result.para2})</div>
+                            <div class="text-content">${result.text2}</div>
+                        </div>
+                    </div>
+                    `;
+                });
+            } else {
+                resultsHtml = '<p>未发现重复或相似的文本。</p>';
+            }
+            
+            return `<!DOCTYPE html>
+            <html lang="zh-CN">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>文档查重报告</title>
+                <style>
+                    body { 
+                        font-family: 'Microsoft YaHei', Arial, sans-serif; 
+                        line-height: 1.6; 
+                        margin: 0; 
+                        padding: 20px; 
+                        background-color: #f5f5f5;
+                        color: #333;
+                    }
+                    .container { 
+                        max-width: 1200px; 
+                        margin: 0 auto; 
+                        background: white; 
+                        padding: 30px; 
+                        border-radius: 10px; 
+                        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+                    }
+                    .header { 
+                        text-align: center; 
+                        border-bottom: 3px solid #4CAF50; 
+                        padding-bottom: 20px; 
+                        margin-bottom: 30px;
+                    }
+                    .header h1 { 
+                        color: #2c3e50; 
+                        margin-bottom: 10px;
+                    }
+                    .summary { 
+                        background: #e8f5e9; 
+                        padding: 15px; 
+                        border-radius: 5px; 
+                        margin-bottom: 20px;
+                        border-left: 4px solid #4CAF50;
+                    }
+                    .stats { 
+                        display: flex; 
+                        justify-content: space-around; 
+                        margin: 20px 0; 
+                        text-align: center;
+                    }
+                    .stat-item { 
+                        background: white; 
+                        padding: 15px; 
+                        border-radius: 8px; 
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                        flex: 1;
+                        margin: 0 10px;
+                    }
+                    .stat-number { 
+                        font-size: 2em; 
+                        font-weight: bold; 
+                        color: #4CAF50;
+                    }
+                    .match-item { 
+                        background: white; 
+                        border: 1px solid #ddd; 
+                        border-radius: 8px; 
+                        margin-bottom: 20px; 
+                        padding: 20px; 
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }
+                    .match-header { 
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: center; 
+                        margin-bottom: 15px; 
+                        padding-bottom: 10px; 
+                        border-bottom: 1px solid #eee;
+                    }
+                    .match-type { 
+                        font-weight: bold; 
+                        padding: 5px 12px; 
+                        border-radius: 20px; 
+                        color: white;
+                    }
+                    .duplicate { background-color: #f44336; }
+                    .similar { background-color: #ff9800; }
+                    .similarity-score { 
+                        font-size: 1.2em; 
+                        font-weight: bold; 
+                        color: #2196F3;
+                    }
+                    .doc-info { 
+                        margin-bottom: 15px; 
+                        padding: 12px; 
+                        background: #f9f9f9; 
+                        border-radius: 5px;
+                        border-left: 3px solid #2196F3;
+                    }
+                    .doc-title { 
+                        font-weight: bold; 
+                        color: #2c3e50; 
+                        margin-bottom: 5px;
+                    }
+                    .text-content { 
+                        background: #f8f9fa; 
+                        padding: 15px; 
+                        border-radius: 5px; 
+                        border-left: 3px solid #9e9e9e;
+                        margin-top: 8px;
+                        white-space: pre-wrap;
+                        color: #555;
+                    }
+                    .footer { 
+                        text-align: center; 
+                        margin-top: 30px; 
+                        padding-top: 20px; 
+                        border-top: 1px solid #ddd; 
+                        color: #777;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🔒 LocalDocDiff - 文档相似性分析报告</h1>
+                        <p>生成时间：${new Date().toLocaleString()}</p>
+                    </div>
+                    
+                    <div class="summary">
+                        <h2>📋 分析概要</h2>
+                        <p>本次分析共检测了 <strong>${uploadedFiles.length}</strong> 个文档，发现 <strong>${results.length}</strong> 处文本匹配。</p>
+                        <p>使用参数：相似度阈值 ${similarThreshold.value}，完全重复阈值 ${duplicateThreshold.value}，最小词数 ${minWords.value}</p>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-number">${duplicateCount}</div>
+                            <div>完全重复</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${similarCount}</div>
+                            <div>相似文本</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${uploadedFiles.length}</div>
+                            <div>分析文档数</div>
+                        </div>
+                    </div>
+                    
+                    <h2>🔍 详细匹配结果</h2>
+                    ${resultsHtml}
+                    
+                    <div class="footer">
+                        <p>报告生成工具：LocalDocDiff | ${new Date().toLocaleString()}</p>
+                        <p><strong>隐私声明：</strong>此报告由完全在本地运行的LocalDocDiff生成，您的文档从未离开您的设备。</p>
+                    </div>
+                </div>
+            </body>
+            </html>`;
+        }
+        
+        // 保存为JSON数据
+        function saveAsJson() {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `文档查重数据_${timestamp}.json`;
+            
+            const jsonContent = JSON.stringify(analysisData, null, 2);
+            const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 保存为文本报告
+        function saveAsTxt() {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `文档查重报告_${timestamp}.txt`;
+            
+            let txtContent = `LocalDocDiff - 文档查重报告\n`;
+            txtContent += `生成时间: ${new Date().toLocaleString()}\n`;
+            txtContent += `分析文档数: ${uploadedFiles.length}\n`;
+            txtContent += `发现匹配项: ${results.length}\n`;
+            txtContent += `使用参数: 相似度阈值 ${similarThreshold.value}, 完全重复阈值 ${duplicateThreshold.value}, 最小词数 ${minWords.value}\n\n`;
+            txtContent += `隐私声明: 此报告由完全在本地运行的LocalDocDiff生成，您的文档从未离开您的设备。\n\n`;
+            
+            if (results.length > 0) {
+                const sortedResults = [...results].sort((a, b) => b.score - a.score);
+                
+                sortedResults.forEach((result, index) => {
+                    txtContent += `----- 匹配项 ${index + 1} -----\n`;
+                    txtContent += `类型: ${result.type} (相似度: ${result.score.toFixed(3)})\n`;
+                    txtContent += `文档1: ${result.doc1} (段落 ${result.para1})\n`;
+                    txtContent += `文本内容: ${result.text1}\n`;
+                    txtContent += `文档2: ${result.doc2} (段落 ${result.para2})\n`;
+                    txtContent += `文本内容: ${result.text2}\n`;
+                    txtContent += `----------------------------------------\n\n`;
+                });
+            } else {
+                txtContent += `未发现重复或相似的文本。\n`;
+            }
+            
+            const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 重置应用
+        function resetApp() {
+            uploadedFiles = [];
+            paragraphs = [];
+            results = [];
+            analysisData = {};
+            
+            fileList.innerHTML = '';
+            analyzeBtn.disabled = true;
+            progressSection.style.display = 'none';
+            resultsSection.style.display = 'none';
+        }
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', function() {
+            initEventListeners();
+        });
+    </script>
+</body>
+</html>
