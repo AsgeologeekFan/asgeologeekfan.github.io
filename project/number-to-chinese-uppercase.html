@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数字转中文大写 | 实用工具</title>
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#36CFFB',
+            neutral: '#F5F7FA',
+            dark: '#1D2129',
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            'card': '0 10px 30px -5px rgba(22, 93, 255, 0.1)',
+            'hover': '0 20px 40px -5px rgba(22, 93, 255, 0.2)',
+            'modal': '0 15px 500px rgba(0, 0, 0, 0.15)',
+          }
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .bg-gradient {
+        background: linear-gradient(135deg, #165DFF 0%, #36CFFB 100%);
+      }
+      .transition-all-300 {
+        transition: all 300ms ease-in-out;
+      }
+      .modal-fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      .modal-slide-in {
+        animation: slideIn 0.3s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      /* 修改动画：直接从透明到不透明，无位移 */
+      @keyframes slideIn {
+        from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+        to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      }
+    }
+  </style>
+  
+  <style>
+    /* 全局样式 */
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      scroll-behavior: smooth;
+    }
+    
+    /* 输入框焦点动画 */
+    .input-focus {
+      transition: all 0.3s ease;
+    }
+    .input-focus:focus {
+      transform: translateY(-2px);
+    }
+    
+    /* 复制成功动画 */
+    @keyframes copySuccess {
+      0% { transform: scale(1); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+    .copy-animation {
+      animation: copySuccess 1s ease-in-out;
+    }
+    
+    /* 复选框样式 */
+    .custom-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      position: relative;
+      cursor: pointer;
+    }
+    .custom-checkbox:checked {
+      background-color: #165DFF;
+      border-color: #165DFF;
+    }
+    .custom-checkbox:checked::after {
+      content: '\f00c';
+      font-family: 'FontAwesome';
+      color: white;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+    }
+    .custom-checkbox:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.2);
+    }
+    
+    /* 模态框遮罩层 */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 50;
+      display: none;
+      /* 遮罩层添加淡入动画 */
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    /* 模态框容器 - 扩大宽度，调整高度，减少滚动需求 */
+    .modal-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      /* 保持居中定位，动画只改变透明度和缩放 */
+      transform: translate(-50%, -50%);
+      background-color: white;
+      border-radius: 16px;
+      width: 92%;
+      max-width: 650px; /* 扩大最大宽度 */
+      max-height: 88vh; /* 提高最大高度占比 */
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+      /* 确保动画流畅 */
+      will-change: opacity, transform;
+    }
+    
+    /* 示例卡片优化 - 减小内边距和字体 */
+    .example-card {
+      padding: 0.75rem; /* 减小内边距 */
+      font-size: 0.875rem; /* 减小字体大小 */
+    }
+    .example-card .input-label {
+      font-size: 0.75rem; /* 进一步减小输入提示字体 */
+      margin-bottom: 0.25rem;
+    }
+    
+    /* 法律风险提示样式 */
+    .legal-notice {
+      background-color: #fff8e6;
+      border-left: 4px solid #ff9800;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+    .legal-notice h4 {
+      color: #e65100 !important;
+      display: flex;
+      align-items: center;
+    }
+    .legal-notice h4 i {
+      margin-right: 0.5rem;
+    }
+    .legal-notice p {
+      color: #664d03 !important;
+      margin-top: 0.5rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body class="bg-neutral min-h-screen flex flex-col">
+  <!-- 顶部导航 -->
+  <header class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-exchange text-primary text-2xl"></i>
+        <h1 class="text-xl md:text-2xl font-bold text-dark">数字转中文大写</h1>
+      </div>
+      <div class="hidden md:flex items-center">
+        <a href="#" class="text-gray-600 hover:text-primary transition-all-300" id="helpLink">
+          <i class="fa fa-question-circle mr-1"></i>使用说明
+        </a>
+      </div>
+      <button class="md:hidden text-gray-600" id="mobileMenuBtn">
+        <i class="fa fa-bars text-xl"></i>
+      </button>
+    </div>
+    <!-- 移动端菜单（默认隐藏） -->
+    <div class="md:hidden hidden bg-white border-t border-gray-100" id="mobileMenu">
+      <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+        <a href="#" class="text-gray-600 hover:text-primary py-2 transition-all-300" id="mobileHelpLink">
+          <i class="fa fa-question-circle mr-1"></i>使用说明
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-8 md:py-10">
+    <div class="max-w-3xl mx-auto">
+      <!-- 介绍卡片 -->
+      <div class="bg-white rounded-2xl shadow-card p-6 md:p-8 mb-8 transform hover:shadow-hover transition-all-300">
+        <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark mb-4">数字转中文大写工具</h2>
+        <p class="text-gray-600 mb-6">快速将阿拉伯数字转换为中文大写格式，适用于财务票据、合同文档等场景。</p>
+        
+        <!-- 使用指导 -->
+        <div class="bg-gray-50 p-4 rounded-lg mb-6 text-sm text-gray-600">
+          <p class="mb-2"><i class="fa fa-info-circle text-primary mr-1"></i>支持整数、小数及千分位分隔符数字</p>
+          <p><i class="fa fa-lightbulb-o text-primary mr-1"></i>点击"使用说明"查看详细示例和格式要求</p>
+        </div>
+        
+        <!-- 输入区域 -->
+        <div class="mb-8">
+          <label for="numberInput" class="block text-gray-700 font-medium mb-2">输入数字</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <i class="fa fa-keyboard-o"></i>
+            </span>
+            <input 
+              type="text" 
+              id="numberInput" 
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg input-focus outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="请输入数字（如：1,234.56 或 12345.67）"
+            >
+          </div>
+          <p id="errorMsg" class="text-red-500 text-sm mt-2 hidden">请输入有效的数字（支持千分位、整数和两位小数）</p>
+        </div>
+        
+        <!-- 选项设置区 -->
+        <div class="mb-8 flex items-center">
+          <input 
+            type="checkbox" 
+            id="useYuanCircle" 
+            class="custom-checkbox mr-3"
+          >
+          <label for="useYuanCircle" class="text-gray-700 cursor-pointer">
+            使用「圆」代替「元」
+          </label>
+        </div>
+        
+        <!-- 转换结果区域 -->
+        <div class="mb-8">
+          <label class="block text-gray-700 font-medium mb-2 flex justify-between items-center">
+            <span>中文大写结果</span>
+            <span id="copyTooltip" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-dark text-white px-4 py-2 rounded-lg opacity-0 pointer-events-none z-20">
+              复制成功！
+            </span>
+          </label>
+          <div class="relative">
+            <div 
+              id="resultOutput" 
+              class="w-full pl-4 pr-20 py-4 border border-gray-300 rounded-lg bg-gray-50 min-h-[100px] flex items-center text-gray-800 text-lg"
+            >
+              转换结果将显示在这里...
+            </div>
+            <button 
+              id="copyBtn" 
+              class="absolute right-3 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-all-300 flex items-center"
+            >
+              <i class="fa fa-copy mr-2"></i>复制
+            </button>
+          </div>
+        </div>
+        
+        <!-- 功能按钮区 -->
+        <div class="flex flex-wrap gap-3">
+          <button id="convertBtn" class="bg-gradient text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-all-300 flex items-center">
+            <i class="fa fa-refresh mr-2"></i>立即转换
+          </button>
+          <button id="clearBtn" class="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all-300 flex items-center">
+            <i class="fa fa-eraser mr-2"></i>清空
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 - 恢复为普通版权信息 -->
+  <footer class="bg-dark text-white py-8">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-gray-400">© 2025 数字转中文大写工具 | by <a href="https://www.asgeologeekfan.top/" class="text-primary hover:underline transition-all-300">AsgeologeekFan</a></p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+            <i class="fa fa-github text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+            <i class="fa fa-comment text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+            <i class="fa fa-info-circle text-xl"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 使用说明模态框 - 添加法律风险说明 -->
+  <div class="modal-backdrop" id="helpModalBackdrop"></div>
+  <div class="modal-container modal-slide-in" id="helpModal">
+    <div class="p-5 md:p-6"> <!-- 减小内边距 -->
+      <div class="flex justify-between items-center mb-4"> <!-- 减小间距 -->
+        <h3 class="text-lg md:text-xl font-bold text-dark flex items-center">
+          <i class="fa fa-question-circle text-primary mr-2"></i>使用说明
+        </h3>
+        <button class="text-gray-400 hover:text-gray-600 transition-all-300" id="closeHelpModal">
+          <i class="fa fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3"> <!-- 减小整体间距 -->
+        <div>
+          <h4 class="font-bold text-gray-800 mb-1.5 text-sm md:text-base">工具介绍</h4>
+          <p class="text-gray-600 text-sm md:text-base">本工具可将阿拉伯数字快速转换为中文大写格式，适用于财务票据、合同文档等场景，支持整数、小数及千分位分隔符数字转换。</p>
+        </div>
+        
+        <div>
+          <h4 class="font-bold text-gray-800 mb-1.5 text-sm md:text-base">使用方法</h4>
+          <ol class="list-decimal list-inside text-gray-600 space-y-0.75 pl-2 text-sm md:text-base">
+            <li>在输入框中填写需要转换的数字</li>
+            <li>可选择是否使用「圆」代替「元」</li>
+            <li>点击"立即转换"按钮获取结果</li>
+            <li>点击"复制"按钮可将结果复制到剪贴板</li>
+          </ol>
+        </div>
+        
+        <div>
+          <h4 class="font-bold text-gray-800 mb-1.5 text-sm md:text-base">支持格式</h4>
+          <ul class="list-disc list-inside text-gray-600 space-y-0.75 pl-2 text-sm md:text-base">
+            <li>整数（如：12345）</li>
+            <li>带千分位的整数（如：12,345）</li>
+            <li>小数（如：12345.67）</li>
+            <li>带千分位的小数（如：12,345.67）</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="font-bold text-gray-800 mb-2 text-sm md:text-base">转换示例</h4>
+          <!-- 响应式网格布局：小屏幕单列，大屏幕双列 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2">
+            <div class="example-card bg-gray-50 rounded-lg border border-gray-200">
+              <p class="input-label text-gray-500 mb-1">输入：12,345</p>
+              <p class="text-gray-800">壹万贰仟叁佰肆拾伍元整</p>
+              <p class="text-gray-800 mt-1">壹万贰仟叁佰肆拾伍圆整</p>
+            </div>
+            <div class="example-card bg-gray-50 rounded-lg border border-gray-200">
+              <p class="input-label text-gray-500 mb-1">输入：6,789.12</p>
+              <p class="text-gray-800">陆仟柒佰捌拾玖元壹角贰分</p>
+              <p class="text-gray-800 mt-1">陆仟柒佰捌拾玖圆壹角贰分</p>
+            </div>
+            <div class="example-card bg-gray-50 rounded-lg border border-gray-200">
+              <p class="input-label text-gray-500 mb-1">输入：1,000,000</p>
+              <p class="text-gray-800">壹佰万元整</p>
+              <p class="text-gray-800 mt-1">壹佰万圆整</p>
+            </div>
+            <div class="example-card bg-gray-50 rounded-lg border border-gray-200">
+              <p class="input-label text-gray-500 mb-1">输入：987,654.32</p>
+              <p class="text-gray-800">玖拾捌万柒仟陆佰伍拾肆元叁角贰分</p>
+              <p class="text-gray-800 mt-1">玖拾捌万柒仟陆佰伍拾肆圆叁角贰分</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 法律风险说明 - 新增部分 -->
+        <div class="legal-notice">
+          <h4 class="font-bold mb-1.5 text-sm md:text-base">
+            <i class="fa fa-exclamation-triangle"></i>法律风险提示
+          </h4>
+          <p class="text-sm md:text-base">
+            本工具仅提供数字格式转换参考服务，转换结果仅供用户参考使用。对于财务票据、合同协议等具有法律效力的正式文件，
+            请务必结合相关法律法规和专业要求进行核实确认。工具开发方不承担因使用本工具转换结果而产生的任何法律责任。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--  JavaScript 功能实现 -->
+  <script>
+    // 获取DOM元素
+    const numberInput = document.getElementById('numberInput');
+    const resultOutput = document.getElementById('resultOutput');
+    const convertBtn = document.getElementById('convertBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const copyTooltip = document.getElementById('copyTooltip');
+    const useYuanCircle = document.getElementById('useYuanCircle');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    // 使用说明相关元素
+    const helpLink = document.getElementById('helpLink');
+    const mobileHelpLink = document.getElementById('mobileHelpLink');
+    const helpModal = document.getElementById('helpModal');
+    const helpModalBackdrop = document.getElementById('helpModalBackdrop');
+    const closeHelpModal = document.getElementById('closeHelpModal');
+    
+    // 中文数字映射
+    const digitMap = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+    const unitMap = ['', '拾', '佰', '仟', '万', '拾', '佰', '仟', '亿'];
+    const decimalUnitMap = ['角', '分'];
+    const yuanUnit = {
+      normal: '元',
+      circle: '圆'
+    };
+    
+    // 预处理输入：移除千分位分隔符
+    function preprocessInput(input) {
+      return input.replace(/,/g, '').trim();
+    }
+    
+    // 数字转中文大写函数
+    function numberToChinese(num) {
+      if (isNaN(num) || num === '') return '请输入有效的数字';
+      
+      if (num === 0) {
+        const unit = useYuanCircle.checked ? yuanUnit.circle : yuanUnit.normal;
+        return `零${unit}整`;
+      }
+      
+      const [integerPart, decimalPart] = num.toString().split('.');
+      let chineseInteger = convertIntegerPart(integerPart);
+      let chineseDecimal = '';
+      
+      if (decimalPart && decimalPart.length > 0) {
+        chineseDecimal = convertDecimalPart(decimalPart);
+      }
+      
+      return chineseDecimal ? chineseInteger + chineseDecimal : chineseInteger + '整';
+    }
+    
+    // 转换整数部分
+    function convertIntegerPart(integerStr) {
+      let result = '';
+      const length = integerStr.length;
+      const unit = useYuanCircle.checked ? yuanUnit.circle : yuanUnit.normal;
+      
+      for (let i = 0; i < length; i++) {
+        const digit = parseInt(integerStr[i]);
+        const position = length - i - 1;
+        
+        if (digit !== 0) {
+          result += digitMap[digit] + unitMap[position];
+        } else {
+          if (position % 4 !== 0 && i > 0 && parseInt(integerStr[i-1]) !== 0) {
+            result += digitMap[digit];
+          }
+          
+          if ((position === 4 || position === 8) && i < length - 1 && parseInt(integerStr.slice(i+1)) !== 0) {
+            result += unitMap[position];
+          }
+        }
+      }
+      
+      return result + unit;
+    }
+    
+    // 转换小数部分
+    function convertDecimalPart(decimalStr) {
+      let result = '';
+      
+      for (let i = 0; i < Math.min(decimalStr.length, 2); i++) {
+        const digit = parseInt(decimalStr[i]);
+        if (digit !== 0) {
+          result += digitMap[digit] + decimalUnitMap[i];
+        }
+      }
+      
+      return result;
+    }
+    
+    // 验证输入是否为有效数字（支持千分位）
+    function isValidNumber(input) {
+      const reg = /^(\d{1,3}(,\d{3})*|\d+)(\.\d{1,2})?$/;
+      return reg.test(input) && input !== '';
+    }
+    
+    // 转换按钮点击事件
+    convertBtn.addEventListener('click', function() {
+      const inputValue = numberInput.value.trim();
+      
+      if (!isValidNumber(inputValue)) {
+        errorMsg.classList.remove('hidden');
+        resultOutput.textContent = '请输入有效的数字（支持千分位、整数和两位小数）';
+        resultOutput.classList.add('text-red-500');
+        return;
+      }
+      
+      errorMsg.classList.add('hidden');
+      resultOutput.classList.remove('text-red-500');
+      
+      const processedValue = preprocessInput(inputValue);
+      const num = parseFloat(processedValue);
+      const chineseResult = numberToChinese(num);
+      resultOutput.textContent = chineseResult;
+      
+      // 添加转换动画
+      resultOutput.classList.add('animate-pulse');
+      setTimeout(() => {
+        resultOutput.classList.remove('animate-pulse');
+      }, 500);
+    });
+    
+    // 清空按钮点击事件
+    clearBtn.addEventListener('click', function() {
+      numberInput.value = '';
+      resultOutput.textContent = '转换结果将显示在这里...';
+      resultOutput.classList.remove('text-red-500');
+      errorMsg.classList.add('hidden');
+      useYuanCircle.checked = false;
+    });
+    
+    // 复制按钮点击事件
+    copyBtn.addEventListener('click', function() {
+      const resultText = resultOutput.textContent.trim();
+      
+      if (resultText === '转换结果将显示在这里...') return;
+      
+      navigator.clipboard.writeText(resultText).then(() => {
+        copyTooltip.classList.add('copy-animation');
+        setTimeout(() => {
+          copyTooltip.classList.remove('copy-animation');
+        }, 1000);
+        
+        copyBtn.classList.add('bg-green-500');
+        copyBtn.innerHTML = '<i class="fa fa-check mr-2"></i>已复制';
+        setTimeout(() => {
+          copyBtn.classList.remove('bg-green-500');
+          copyBtn.innerHTML = '<i class="fa fa-copy mr-2"></i>复制';
+        }, 1500);
+      });
+    });
+    
+    // 输入框回车触发转换
+    numberInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        convertBtn.click();
+      }
+    });
+    
+    // 输入框实时验证
+    numberInput.addEventListener('input', function() {
+      const inputValue = numberInput.value.trim();
+      if (inputValue && !isValidNumber(inputValue)) {
+        errorMsg.classList.remove('hidden');
+      } else {
+        errorMsg.classList.add('hidden');
+      }
+    });
+    
+    // 复选框变化时重新转换（如果已有输入）
+    useYuanCircle.addEventListener('change', function() {
+      const inputValue = numberInput.value.trim();
+      if (inputValue && isValidNumber(inputValue)) {
+        const processedValue = preprocessInput(inputValue);
+        const num = parseFloat(processedValue);
+        const chineseResult = numberToChinese(num);
+        resultOutput.textContent = chineseResult;
+        
+        resultOutput.classList.add('animate-pulse');
+        setTimeout(() => {
+          resultOutput.classList.remove('animate-pulse');
+        }, 300);
+      }
+    });
+    
+    // 移动端菜单切换
+    mobileMenuBtn.addEventListener('click', function() {
+      mobileMenu.classList.toggle('hidden');
+    });
+    
+    // 使用说明相关事件
+    helpLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      showHelpModal();
+    });
+    
+    mobileHelpLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      mobileMenu.classList.add('hidden'); // 关闭移动端菜单
+      showHelpModal();
+    });
+    
+    closeHelpModal.addEventListener('click', hideHelpModal);
+    
+    helpModalBackdrop.addEventListener('click', hideHelpModal);
+    
+    // 显示使用说明模态框
+    function showHelpModal() {
+      // 先设置显示，再触发动画
+      helpModalBackdrop.style.display = 'block';
+      helpModal.style.display = 'block';
+      // 阻止页面滚动
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // 隐藏使用说明模态框
+    function hideHelpModal() {
+      helpModalBackdrop.style.display = 'none';
+      helpModal.style.display = 'none';
+      // 恢复页面滚动
+      document.body.style.overflow = '';
+    }
+    
+    // 点击模态框外部关闭
+    window.addEventListener('click', function(e) {
+      if (e.target === helpModalBackdrop) {
+        hideHelpModal();
+      }
+    });
+    
+    // 页面加载完成后的动画效果
+    window.addEventListener('load', function() {
+      const cards = document.querySelectorAll('.shadow-card');
+      cards.forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add('opacity-100', 'translate-y-0');
+          card.classList.remove('opacity-0', 'translate-y-4');
+        }, 100 * index);
+      });
+    });
+  </script>
+</body>
+</html>
