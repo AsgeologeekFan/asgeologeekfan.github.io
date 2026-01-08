@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT 进度条大师 | 专业版 v8.1</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        /* --- 设计系统 --- */
+        :root {
+            --primary: #0056D2;       /* 企业蓝 */
+            --primary-hover: #0044A5;
+            --bg-page: #F4F7FA;       /* 页面背景 */
+            --bg-card: #FFFFFF;
+            --text-main: #172B4D;     /* 主要文字 */
+            --text-sub: #5E6C84;      /* 次级文字 */
+            --border: #DFE1E6;        /* 边框 */
+            --radius: 6px;            /* 圆角 */
+            --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+
+        body {
+            font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 1000px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #D1D5DB;
+        }
+
+        /* --- 顶部导航 --- */
+        header {
+            background: #fff;
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .app-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .badge {
+            font-size: 0.75rem;
+            background: #E3F2FD;
+            color: #0277BD;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #B3E5FC;
+        }
+
+        /* --- 主内容区 --- */
+        .main-content {
+            padding: 32px;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 双栏布局 */
+            gap: 40px;
+        }
+
+        .full-width { grid-column: span 2; }
+
+        /* 上传区域 */
+        .upload-zone {
+            border: 2px dashed #C1C7D0;
+            border-radius: var(--radius);
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            background: #FAFBFC;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .upload-zone:hover { border-color: var(--primary); background: #F0F7FF; }
+        .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .upload-title { font-weight: 600; color: var(--primary); font-size: 1rem; margin-bottom: 5px; }
+        .upload-desc { font-size: 0.85rem; color: var(--text-sub); }
+
+        /* 模块标题 (已修复：移除下划线) */
+        .section-header {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 表单控件 */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+        
+        .helper-text {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .example-tag {
+            background: #F4F5F7; border: 1px solid #EBECF0; padding: 0 4px; border-radius: 3px; font-family: monospace; color: #D63964;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #C1C7D0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            transition: border 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(0,86,210, 0.2); }
+
+        .row-group { display: flex; gap: 10px; align-items: center; }
+        
+        input[type="color"] { -webkit-appearance: none; border: 1px solid #C1C7D0; width: 40px; height: 36px; padding: 2px; border-radius: 4px; cursor: pointer; background: #fff; }
+        input[type="range"] { flex: 1; accent-color: var(--primary); cursor: pointer; }
+
+        /* Checkbox 面板 */
+        .panel {
+            background: #FAFBFC;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 5px 15px;
+        }
+        .check-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #EBECF0;
+        }
+        .check-row:last-child { border-bottom: none; }
+        .check-label { font-size: 0.85rem; font-weight: 500; }
+        input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+
+        /* --- 底部 --- */
+        footer {
+            padding: 20px 32px;
+            background: #F4F5F7;
+            border-top: 1px solid var(--border);
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .status-text { font-size: 0.85rem; color: var(--text-sub); font-weight: 500; }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-primary:disabled { background-color: #DFE1E6; color: #A5ADBA; cursor: not-allowed; box-shadow: none; }
+
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; gap: 20px; } footer { flex-direction: column; gap: 15px; text-align: center; } .btn-primary { width: 100%; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="app-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" color="#0056D2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                PPT 进度条大师
+                <span class="badge">专业版</span>
+            </div>
+            <div style="font-size: 0.85rem; color: #5E6C84;">纯前端处理 · 数据不离本地</div>
+        </header>
+
+        <div class="main-content">
+            <div class="full-width">
+                <div class="upload-zone">
+                    <input type="file" id="fileInput" accept=".pptx" />
+                    <div class="upload-title">点击或拖拽上传 PPTX 文件</div>
+                    <div class="upload-desc">支持 Microsoft Office 2010 及以上版本</div>
+                    <div id="fileNameDisplay" style="margin-top:10px; font-weight:bold; color:var(--primary); display:none;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-header">🎨 视觉设置</div>
+
+                <div class="form-group">
+                    <label>进度条颜色与粗细</label>
+                    <div class="row-group">
+                        <input type="color" id="barColor" value="#0056D2" title="选择主色调">
+                        <input type="range" id="barHeight" min="2" max="20" value="4" step="0.5" title="调整高度">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>文字样式</label>
+                    <div class="row-group" style="margin-bottom:10px;">
+                        <select id="fontFamily" style="flex:2">
+                            <option value="Microsoft YaHei">微软雅黑</option>
+                            <option value="SimHei">黑体</option>
+                            <option value="KaiTi">楷体</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                        </select>
+                        <input type="number" id="fontSize" value="14" style="flex:1" placeholder="字号">
+                    </div>
+                    
+                    <div style="background:#F4F5F7; padding:10px; border-radius:4px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                        <span style="font-size:0.85rem; font-weight:500;">文字颜色跟随进度条</span>
+                        <input type="checkbox" id="syncColor" checked>
+                    </div>
+                    
+                    <div class="row-group">
+                        <input type="color" id="fontColor" value="#0056D2" disabled>
+                        <span style="font-size:0.8rem; color:var(--text-sub)">自定义文字颜色 (需取消上方勾选)</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="check-row">
+                        <span class="check-label">显示页码数字 <span style="color:#999; font-weight:400">(5)</span></span>
+                        <input type="checkbox" id="showPageNum" checked>
+                    </div>
+                    <div class="check-row">
+                        <span class="check-label">显示总页数 <span style="color:#999; font-weight:400">(/20)</span></span>
+                        <input type="checkbox" id="showTotalNum" checked>
+                    </div>
+                    <div class="check-row">
+                        <span class="check-label">页码文字加粗</span>
+                        <input type="checkbox" id="fontBold">
+                    </div>
+                    <div class="check-row">
+                        <div>
+                            <span class="check-label">清理旧图层</span>
+                            <div class="helper-text" style="margin:0">推荐勾选，防止重复生成</div>
+                        </div>
+                        <input type="checkbox" id="cleanOld" checked>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-header">⚙️ 逻辑设置</div>
+
+                <div class="form-group">
+                    <label>手动添加章节分割竖线</label>
+                    <input type="text" id="sectionBreaks" placeholder="例如: 6, 15, 22">
+                    <div class="helper-text">
+                        输入页码，程序将在该页的<b>左侧</b>绘制白色竖线。
+                        <br>例如输入 <span class="example-tag">6</span>，则竖线位于第5页与第6页之间。
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>排除与跳过 (不显示进度条)</label>
+                    <div class="row-group" style="margin-bottom:10px;">
+                        <div style="flex:1">
+                            <input type="number" id="skipStart" value="1">
+                            <div class="helper-text">跳过开头 N 页</div>
+                        </div>
+                        <div style="flex:1">
+                            <input type="number" id="skipEnd" value="0">
+                            <div class="helper-text">跳过结尾 N 页</div>
+                        </div>
+                    </div>
+                    <input type="text" id="excludePages" placeholder="指定页码排除，如: 2, 3">
+                    <div class="helper-text">指定页码将不参与进度计算，也不显示进度条。</div>
+                </div>
+
+                <div class="form-group">
+                    <label>位置微调</label>
+                    <div class="row-group">
+                        <div style="flex:1">
+                            <input type="number" id="offsetX" value="0">
+                            <div class="helper-text">↔ 水平平移 (正右负左)</div>
+                        </div>
+                        <div style="flex:1">
+                            <input type="number" id="offsetY" value="0">
+                            <div class="helper-text">↕ 垂直平移 (正下负上)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel" style="padding: 5px 15px;">
+                     <div class="check-row" style="border:none">
+                        <span class="check-label">忽略隐藏幻灯片</span>
+                        <input type="checkbox" id="skipHidden" checked>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div id="status" class="status-text">等待上传文件...</div>
+            <button id="downloadBtn" class="btn-primary" disabled>生成并下载 PPT</button>
+        </footer>
+    </div>
+
+    <script>
+        // --- 1. DOM 引用 ---
+        const els = {
+            file: document.getElementById('fileInput'),
+            fileDisplay: document.getElementById('fileNameDisplay'),
+            btn: document.getElementById('downloadBtn'),
+            status: document.getElementById('status'),
+            // 视觉
+            barColor: document.getElementById('barColor'),
+            barHeight: document.getElementById('barHeight'),
+            fontFamily: document.getElementById('fontFamily'),
+            fontSize: document.getElementById('fontSize'),
+            fontColor: document.getElementById('fontColor'),
+            syncColor: document.getElementById('syncColor'), // 颜色联动Checkbox
+            // 开关
+            showPageNum: document.getElementById('showPageNum'),
+            showTotalNum: document.getElementById('showTotalNum'),
+            fontBold: document.getElementById('fontBold'),
+            cleanOld: document.getElementById('cleanOld'),
+            skipHidden: document.getElementById('skipHidden'),
+            // 逻辑
+            sectionBreaks: document.getElementById('sectionBreaks'),
+            skipStart: document.getElementById('skipStart'),
+            skipEnd: document.getElementById('skipEnd'),
+            excludePages: document.getElementById('excludePages'),
+            offsetX: document.getElementById('offsetX'),
+            offsetY: document.getElementById('offsetY')
+        };
+
+        let currentFile = null;
+
+        // --- 2. 交互逻辑 ---
+
+        // 颜色联动逻辑
+        function updateColorSync() {
+            if (els.syncColor.checked) {
+                els.fontColor.value = els.barColor.value;
+                els.fontColor.disabled = true;
+            } else {
+                els.fontColor.disabled = false;
+            }
+        }
+
+        els.syncColor.addEventListener('change', updateColorSync);
+        els.barColor.addEventListener('input', () => {
+            if (els.syncColor.checked) {
+                els.fontColor.value = els.barColor.value;
+            }
+        });
+
+        // 文件上传
+        els.file.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                currentFile = e.target.files[0];
+                els.fileDisplay.style.display = 'block';
+                els.fileDisplay.innerText = "📄 " + currentFile.name;
+                els.btn.disabled = false;
+                els.status.innerText = "文件已就绪，请点击生成按钮";
+                els.status.style.color = "var(--primary)";
+            }
+        });
+
+        // 按钮点击
+        els.btn.addEventListener('click', async () => {
+            if (!currentFile) return;
+            
+            els.btn.disabled = true;
+            els.btn.innerText = "⏳ 正在处理中...";
+            els.status.innerText = "正在解析 XML 结构...";
+
+            try {
+                const config = {
+                    cleanOld: els.cleanOld.checked,
+                    // 尺寸换算：1px ≈ 9525 EMU
+                    barH: parseFloat(els.barHeight.value) * 36000, 
+                    barColor: els.barColor.value.replace('#', ''),
+                    
+                    showText: els.showPageNum.checked,
+                    showTotal: els.showTotalNum.checked,
+                    isBold: els.fontBold.checked,
+                    fontName: els.fontFamily.value,
+                    fontSize: (parseInt(els.fontSize.value) || 12) * 100, 
+                    fontColor: els.fontColor.value.replace('#', ''),
+                    
+                    // 偏移换算：1pt ≈ 12700 EMU
+                    offX: (parseInt(els.offsetX.value) || 0) * 12700,
+                    offY: (parseInt(els.offsetY.value) || 0) * 12700,
+
+                    manualBreaks: parseList(els.sectionBreaks.value),
+                    skipS: parseInt(els.skipStart.value) || 0,
+                    skipE: parseInt(els.skipEnd.value) || 0,
+                    skipH: els.skipHidden.checked,
+                    exclude: parseList(els.excludePages.value)
+                };
+
+                await processPPT(currentFile, config);
+                
+                els.btn.disabled = false;
+                els.btn.innerText = "生成并下载";
+                els.status.innerText = "🎉 处理成功！下载已开始。";
+                els.status.style.color = "#00875A"; // Success Green
+
+            } catch (err) {
+                console.error(err);
+                els.btn.disabled = false;
+                els.btn.innerText = "重试";
+                els.status.innerText = "❌ 错误: " + err.message;
+                els.status.style.color = "#DE350B";
+            }
+        });
+
+        // --- 3. 核心 PPT 处理逻辑 ---
+        
+        async function processPPT(file, cfg) {
+            const zip = new JSZip();
+            const loadedZip = await zip.loadAsync(file);
+            const parser = new DOMParser();
+            const serializer = new XMLSerializer();
+
+            // A. 读取画布尺寸
+            let sW = 9144000, sH = 5143500;
+            try {
+                const pXml = await loadedZip.file("ppt/presentation.xml").async("string");
+                const sz = pXml.match(/<p:sldSz[^>]*cx="(\d+)"[^>]*cy="(\d+)"/);
+                if (sz) { sW = parseInt(sz[1]); sH = parseInt(sz[2]); }
+            } catch(e) {}
+
+            // B. 收集幻灯片
+            const slides = [];
+            loadedZip.folder("ppt/slides").forEach((path) => {
+                if (path.match(/^slide\d+\.xml$/)) {
+                    slides.push({ 
+                        path: "ppt/slides/" + path, 
+                        filename: path.split('/').pop(),
+                        index: parseInt(path.match(/\d+/)[0]) 
+                    });
+                }
+            });
+            slides.sort((a,b) => a.index - b.index);
+
+            // C. 预处理 (清理 + 校验)
+            for (let i = 0; i < slides.length; i++) {
+                const s = slides[i];
+                let xml = await loadedZip.file(s.path).async("string");
+
+                // 清理旧图层
+                if (cfg.cleanOld) {
+                    const doc = parser.parseFromString(xml, "text/xml");
+                    const nvPrs = doc.getElementsByTagName("p:cNvPr");
+                    const toRemove = [];
+                    for(let k=0; k<nvPrs.length; k++){
+                        const n = nvPrs[k].getAttribute("name");
+                        if(n && n.startsWith("PPTMaster")) {
+                            let p = nvPrs[k].parentNode;
+                            while(p && p.nodeName !== "p:sp") p = p.parentNode;
+                            if(p) toRemove.push(p);
+                        }
+                    }
+                    if(toRemove.length > 0) {
+                        toRemove.forEach(n => n.parentNode.removeChild(n));
+                        xml = serializer.serializeToString(doc).replace(/ xmlns=""/g, "");
+                    }
+                }
+                
+                s.xml = xml;
+                const isHidden = /<p:sld[^>]*show="0"/.test(xml);
+                const pNum = i + 1; // 物理页码
+                s.valid = true;
+                
+                if (cfg.skipH && isHidden) s.valid = false;
+                if (i < cfg.skipS) s.valid = false;
+                if (i >= slides.length - cfg.skipE) s.valid = false;
+                if (cfg.exclude.includes(pNum)) s.valid = false;
+                
+                s.physNum = pNum;
+            }
+
+            const validSlides = slides.filter(s => s.valid);
+            const totalValid = validSlides.length;
+
+            // D. 计算分割线位置
+            // 逻辑：如果用户输入 "6"，意为第6页是新章节，竖线画在第5页结束（即 bkIdx-1 处）
+            const breakIndices = [];
+            validSlides.forEach((s, idx) => {
+                const currentValidIdx = idx + 1;
+                // 只匹配手动指定的物理页码
+                if (cfg.manualBreaks.includes(s.physNum)) {
+                    breakIndices.push(currentValidIdx);
+                }
+            });
+
+            // E. 注入新元素
+            validSlides.forEach((s, idx) => {
+                const currentValidIdx = idx + 1;
+                const progW = Math.floor((currentValidIdx / totalValid) * sW);
+                const barY = sH - cfg.barH;
+                const idBase = 900000 + s.index * 200; // 高位ID
+
+                let shapeStr = "";
+                
+                // 1. 底槽
+                shapeStr += createRect(idBase+1, "PPTMaster_Bg", 0, barY, sW, cfg.barH, "EAECEF", 100000);
+                // 2. 进度条
+                shapeStr += createRect(idBase+2, "PPTMaster_Bar", 0, barY, progW, cfg.barH, cfg.barColor, 100000);
+                
+                // 3. 分割线
+                breakIndices.forEach((bkIdx, k) => {
+                    if (bkIdx > 1) {
+                        const divX = Math.floor(((bkIdx - 1) / totalValid) * sW);
+                        shapeStr += createRect(idBase + 50 + k, "PPTMaster_Div", 
+                            divX - 10000, barY, 20000, cfg.barH, "FFFFFF", 100000);
+                    }
+                });
+
+                // 4. 文字
+                if (cfg.showText) {
+                    let txt = `${currentValidIdx}`;
+                    if (cfg.showTotal) txt += ` / ${totalValid}`;
+                    
+                    const estH = cfg.fontSize * 1.5 * 127; 
+                    const baseX = sW - (2000000); 
+                    const baseY = barY - estH;
+
+                    shapeStr += createText(
+                        idBase+150, "PPTMaster_Txt", 
+                        baseX + cfg.offX, baseY + cfg.offY, 
+                        1800000, estH, 
+                        txt, cfg.fontSize, cfg.fontColor, cfg.fontName, cfg.isBold
+                    );
+                }
+
+                if (s.xml.includes("</p:spTree>")) {
+                    const newXml = s.xml.replace("</p:spTree>", shapeStr + "</p:spTree>");
+                    loadedZip.file(s.path, newXml);
+                }
+            });
+
+            // F. 导出
+            const blob = await loadedZip.generateAsync({type:"blob"});
+            saveAs(blob, `Processed-${file.name}`);
+        }
+
+        // --- 辅助函数 ---
+        function parseList(str) {
+            if (!str) return [];
+            return str.replace(/，/g, ',').split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        }
+
+        function createRect(id, name, x, y, cx, cy, color, alpha) {
+            return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${name}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.floor(x)}" y="${Math.floor(y)}"/><a:ext cx="${Math.floor(cx)}" cy="${Math.floor(cy)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${color}"><a:alpha val="${alpha}"/></a:srgbClr></a:solidFill></p:spPr></p:sp>`;
+        }
+
+        function createText(id, name, x, y, cx, cy, text, size, color, font, isBold) {
+            const boldAttr = isBold ? 'b="1"' : 'b="0"';
+            return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${name}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.floor(x)}" y="${Math.floor(y)}"/><a:ext cx="${Math.floor(cx)}" cy="${Math.floor(cy)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="none" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="zh-CN" sz="${size}" ${boldAttr} i="0"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:latin typeface="${font}"/><a:ea typeface="${font}"/></a:rPr><a:t>${text}</a:t></a:r></a:p></p:txBody></p:sp>`;
+        }
+    </script>
+</body>
+</html>
