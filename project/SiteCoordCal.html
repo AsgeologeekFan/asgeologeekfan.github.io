@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工点坐标计算工具 (Web版)</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary-color: #2c3e50; --accent-color: #3498db; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { color: var(--primary-color); border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.5rem; }
+        
+        /* 上传区域样式 */
+        .upload-area { border: 2px dashed #ccc; border-radius: 8px; padding: 40px; text-align: center; margin: 20px 0; transition: all 0.3s; cursor: pointer; background: #fafafa; }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--accent-color); background: #eef7fd; }
+        .icon { font-size: 48px; color: #ccc; margin-bottom: 10px; display: block; }
+        
+        /* 按钮与状态 */
+        .btn { background-color: var(--accent-color); color: white; padding: 10px 25px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; transition: background 0.2s; display: inline-block; margin-top: 10px; }
+        .btn:hover { background-color: #2980b9; }
+        .btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .status-box { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        /* 表格预览 */
+        .table-container { margin-top: 25px; overflow-x: auto; max-height: 400px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap; }
+        th { background-color: #f8f9fa; position: sticky; top: 0; z-index: 10; font-weight: 600; }
+        .outlier-row { background-color: #fff3cd; } /* 异常行高亮 */
+        
+        .hidden-input { display: none; }
+        .summary { font-size: 0.9em; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>工点设备坐标计算与分析系统</h1>
+    <p class="summary">基于浏览器本地计算，数据不上传服务器。支持 .xlsx, .xls, .csv</p>
+
+    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <span class="icon">📂</span>
+        <p>点击选择文件 或 将文件拖拽至此</p>
+        <p style="font-size: 0.85em; color: #999;">必需列：所属工点, 经度, 纬度, 设备编码<br>(可选: 所属项目, 设备名称)</p>
+        <input type="file" id="fileInput" class="hidden-input" accept=".xlsx, .xls, .csv">
+    </div>
+
+    <div id="statusBox" class="status-box"></div>
+
+    <div id="resultArea" style="display:none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin:0;">处理结果预览</h3>
+            <button class="btn" onclick="exportToExcel()">📥 下载计算结果</button>
+        </div>
+        <div class="table-container">
+            <table id="previewTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === 全局变量 ===
+    let globalProcessedData = [];
+    const R = 6371000; // 地球半径
+
+    // === 事件监听 ===
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    // === 核心逻辑 ===
+    async function handleFile(file) {
+        showStatus('正在读取并计算...', 'normal');
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                processData(jsonData);
+            } catch (err) {
+                console.error(err);
+                showStatus(`文件读取失败: ${err.message}`, 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function processData(rows) {
+        if (!rows || rows.length === 0) {
+            showStatus('错误：文件为空或格式无法解析', 'error');
+            return;
+        }
+
+        // 1. 检查必要列
+        const requiredCols = ['所属工点', '经度', '纬度', '设备编码'];
+        const headers = Object.keys(rows[0]);
+        const missing = requiredCols.filter(col => !headers.includes(col));
+
+        if (missing.length > 0) {
+            showStatus(`错误：缺少必要列 [${missing.join(', ')}]`, 'error');
+            return;
+        }
+
+        // 2. 数据预处理（填充默认值）
+        const cleanRows = rows.map(row => ({
+            ...row,
+            '设备名称': row['设备名称'] || String(row['设备编码']),
+            '所属项目': row['所属项目'] || '默认项目',
+            '经度': parseFloat(row['经度']),
+            '纬度': parseFloat(row['纬度'])
+        })).filter(r => !isNaN(r['经度']) && !isNaN(r['纬度'])); // 过滤无效坐标
+
+        // 3. 分组 (GroupBy Project + Site)
+        const groups = {};
+        cleanRows.forEach(row => {
+            const key = `${row['所属项目']}###${row['所属工点']}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(row);
+        });
+
+        // 4. 对每个分组进行分析
+        const results = [];
+        let outlierCount = 0;
+
+        for (const key in groups) {
+            const groupData = groups[key];
+            const [project, site] = key.split('###');
+            
+            const analysis = analyzeGroup(groupData);
+            
+            if (analysis['异常设备明细(>1km)'] !== '无') outlierCount++;
+
+            results.push({
+                '所属项目': project,
+                '所属工点': site,
+                ...analysis
+            });
+        }
+
+        globalProcessedData = results;
+        renderTable(results);
+        
+        const msg = `计算完成！共处理 ${results.length} 个工点。${outlierCount > 0 ? `发现 ${outlierCount} 个工点存在严重偏移。` : '数据质量良好。'}`;
+        showStatus(msg, outlierCount > 0 ? 'error' : 'success'); // 用 error 样式醒目提示异常
+        document.getElementById('resultArea').style.display = 'block';
+    }
+
+    // === 单个工点分析逻辑 (Python逻辑复刻) ===
+    function analyzeGroup(group) {
+        const count = group.length;
+        const lons = group.map(r => r['经度']);
+        const lats = group.map(r => r['纬度']);
+
+        // 1. 统计值
+        const meanLon = mean(lons);
+        const meanLat = mean(lats);
+        const medianLon = median(lons);
+        const medianLat = median(lats);
+
+        // 2. 密度加权中心 (用反距离加权模拟 KDE)
+        // 逻辑：距离中位数越近的点，权重越大
+        let densityLon = medianLon, densityLat = medianLat;
+        if (count >= 3) {
+            try {
+                const weights = group.map(r => {
+                    const d = haversine(medianLat, medianLon, r['纬度'], r['经度']);
+                    return 1 / (d + 1); // +1 防止除以0
+                });
+                const sumW = sum(weights);
+                densityLon = sum(group.map((r, i) => r['经度'] * weights[i])) / sumW;
+                densityLat = sum(group.map((r, i) => r['纬度'] * weights[i])) / sumW;
+            } catch (e) { console.warn("密度计算降级"); }
+        }
+
+        // 3. 偏差分析
+        const distMeanMedian = haversine(meanLat, meanLon, medianLat, medianLon);
+
+        // 4. 识别偏移设备
+        const outlierInfos = [];
+        group.forEach(row => {
+            const dist = haversine(medianLat, medianLon, row['纬度'], row['经度']);
+            if (dist > 1000) {
+                outlierInfos.push(`${row['设备名称']}(${row['设备编码']})`);
+            }
+        });
+        const outlierStr = outlierInfos.length > 0 ? outlierInfos.join("、") : "无";
+
+        // 5. 备注生成
+        const remarks = [];
+        let suggested = "中位数";
+
+        if (outlierInfos.length > 0) {
+            remarks.push(`发现${outlierInfos.length}个设备偏移超1km`);
+            remarks.push("建议检查异常列表");
+        }
+
+        if (distMeanMedian > 500) {
+            remarks.push(`平均值被拉偏${Math.round(distMeanMedian)}米`);
+            if (!remarks.includes("建议检查异常列表")) remarks.push("建议采用中位数");
+        } else if (distMeanMedian <= 100 && outlierInfos.length === 0) {
+            remarks.push("数据质量良好");
+            suggested = "平均值";
+        }
+
+        return {
+            '设备数量': count,
+            '工点经度_中位数': medianLon,
+            '工点纬度_中位数': medianLat,
+            '工点经度_平均值': meanLon,
+            '工点纬度_平均值': meanLat,
+            '工点经度_密度加权': densityLon,
+            '工点纬度_密度加权': densityLat,
+            '中心偏差(米)': parseFloat(distMeanMedian.toFixed(2)),
+            '推荐坐标类型': suggested,
+            '分析备注': remarks.join("; "),
+            '异常设备明细(>1km)': outlierStr
+        };
+    }
+
+    // === 数学工具函数 ===
+    function toRad(Value) { return Value * Math.PI / 180; }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+
+    function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
+
+    function median(arr) {
+        const sorted = [...arr].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    // === UI 渲染与导出 ===
+    function renderTable(data) {
+        const tableHead = document.querySelector('#previewTable thead');
+        const tableBody = document.querySelector('#previewTable tbody');
+        
+        // 生成表头
+        const columns = Object.keys(data[0]);
+        tableHead.innerHTML = `<tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr>`;
+
+        // 生成内容 (只显示前20条预览)
+        const previewData = data.slice(0, 20);
+        tableBody.innerHTML = previewData.map(row => {
+            const isOutlier = row['异常设备明细(>1km)'] !== '无';
+            return `<tr class="${isOutlier ? 'outlier-row' : ''}">
+                ${columns.map(col => `<td>${formatVal(row[col])}</td>`).join('')}
+            </tr>`;
+        }).join('');
+        
+        if(data.length > 20) {
+            tableBody.innerHTML += `<tr><td colspan="${columns.length}" style="text-align:center; color:#999;">... 还有 ${data.length - 20} 条数据，请下载查看完整版 ...</td></tr>`;
+        }
+    }
+
+    function formatVal(val) {
+        if (typeof val === 'number') {
+            // 经纬度保留6位，其他保留2位
+            return val.toString().includes('.') ? (val > 1000 ? val.toFixed(2) : parseFloat(val.toFixed(8))) : val;
+        }
+        return val;
+    }
+
+    function showStatus(msg, type) {
+        const box = document.getElementById('statusBox');
+        box.style.display = 'block';
+        box.textContent = msg;
+        box.className = 'status-box ' + (type === 'error' ? 'status-error' : 'status-success');
+    }
+
+    function exportToExcel() {
+        if (!globalProcessedData.length) return;
+        
+        const ws = XLSX.utils.json_to_sheet(globalProcessedData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "工点坐标计算");
+        
+        const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,"");
+        XLSX.writeFile(wb, `工点坐标计算_含项目信息_${dateStr}.xlsx`);
+    }
+</script>
+
+</body>
+</html>
