@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>边坡监测数据实时展示</title>
+    <!-- 引入ECharts CDN（无需本地安装，直接使用） -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+        body {
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        /* 图表容器样式 */
+        .chart-box {
+            width: 100%;
+            height: 400px;
+            margin: 20px 0;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        /* 表格样式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border: 1px solid #e1e8ed;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: normal;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+        /* 状态提示 */
+        .status {
+            margin-bottom: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .success {
+            color: #27ae60;
+        }
+        /* 数据刷新提示 */
+        .refresh-tip {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #999;
+            text-align: right;
+        }
+        /* 筛选控件样式 */
+        .filter-box {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filter-box label {
+            color: #666;
+            font-size: 14px;
+        }
+        .filter-box select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        /* 配置提示样式 */
+        .config-tip {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            color: #856404;
+            font-size: 13px;
+        }
+        .config-tip a {
+            color: #0066cc;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>边坡监测传感器实时数据</h1>
+        
+        <!-- GitHub Pages 配置提示 -->
+        <div class="config-tip" id="config-tip" style="display: none;">
+            ⚠️ 请先修改代码中的 <strong>API_BASE_URL</strong> 为你的服务器地址
+        </div>
+        
+        <div class="status" id="status">🔄 正在加载数据...</div>
+        
+        <!-- ECharts图表容器 -->
+        <div class="chart-box" id="sensor-chart"></div>
+        
+        <!-- 设备筛选控件 -->
+        <div class="filter-box">
+            <label for="device-filter">选择设备：</label>
+            <select id="device-filter">
+                <option value="all">所有设备</option>
+                <!-- 设备选项会通过JS动态填充 -->
+            </select>
+            <label for="value-type">查看位移：</label>
+            <select id="value-type">
+                <option value="both">X+Y位移</option>
+                <option value="x">仅X位移</option>
+                <option value="y">仅Y位移</option>
+            </select>
+        </div>
+
+        <!-- 数据表格 -->
+        <table>
+            <thead>
+                <tr>
+                    <th>序号（ID）</th>
+                    <th>设备编号</th>
+                    <th>X方向位移 (m)</th>
+                    <th>Y方向位移 (m)</th>
+                    <th>采集时间</th>
+                </tr>
+            </thead>
+            <tbody id="data-table">
+                <!-- 数据会通过JS动态填充 -->
+            </tbody>
+        </table>
+        <div class="refresh-tip" id="refresh-time">最后刷新时间：--</div>
+    </div>
+
+    <script>
+        // ===================== 配置项 =====================
+        // 修改为你的服务器地址（包含端口号）
+        // 示例：const API_BASE_URL = 'http://120.26.23.53:5000';
+        const API_BASE_URL = 'http://120.26.23.53:5000';
+        // =================================================
+        
+        // 检查配置是否已修改
+        if (API_BASE_URL === 'http://120.26.23.53:5000') {
+            document.getElementById('config-tip').style.display = 'block';
+            document.getElementById('status').innerHTML = '⚠️ 请先修改 API_BASE_URL 配置';
+            document.getElementById('status').className = 'status error';
+        }
+        
+        // 初始化ECharts实例
+        const chartDom = document.getElementById('sensor-chart');
+        const myChart = echarts.init(chartDom);
+        let allSensorData = []; // 存储所有原始数据
+        let deviceList = [];    // 存储设备列表
+
+        // 格式化ECharts数据的函数
+        function formatChartData(filterDevice, valueType) {
+            // 筛选数据：按设备过滤
+            let filteredData = allSensorData;
+            if (filterDevice !== 'all') {
+                filteredData = allSensorData.filter(item => item.device_id === filterDevice);
+            }
+            // 按时间升序排序（折线图需要时间顺序）
+            filteredData.sort((a, b) => new Date(a.monitor_time) - new Date(b.monitor_time));
+
+            // 提取时间轴（x轴）
+            const xAxisData = filteredData.map(item => item.monitor_time);
+            
+            // 构建系列数据（y轴）
+            const series = [];
+            // 处理X位移
+            if (valueType === 'both' || valueType === 'x') {
+                series.push({
+                    name: 'X方向位移 (m)',
+                    type: 'line',
+                    data: filteredData.map(item => item.value_x),
+                    smooth: true, // 平滑折线
+                    lineStyle: { width: 2 },
+                    itemStyle: { color: '#3498db' },
+                    tooltip: { valueFormatter: (val) => `${val} m` }
+                });
+            }
+            // 处理Y位移
+            if (valueType === 'both' || valueType === 'y') {
+                series.push({
+                    name: 'Y方向位移 (m)',
+                    type: 'line',
+                    data: filteredData.map(item => item.value_y),
+                    smooth: true,
+                    lineStyle: { width: 2 },
+                    itemStyle: { color: '#e74c3c' },
+                    tooltip: { valueFormatter: (val) => `${val} m` }
+                });
+            }
+
+            // ECharts配置项
+            const option = {
+                title: {
+                    text: `设备${filterDevice === 'all' ? '汇总' : filterDevice}位移趋势`,
+                    left: 'center',
+                    textStyle: { fontSize: 16, color: '#2c3e50' }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    formatter: (params) => {
+                        let res = params[0].name;
+                        params.forEach(param => {
+                            res += `<br/>${param.seriesName}：${param.value} m`;
+                        });
+                        return res;
+                    }
+                },
+                legend: {
+                    data: ['X方向位移 (m)', 'Y方向位移 (m)'],
+                    top: 30
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xAxisData,
+                    axisLabel: {
+                        rotate: 45, // 时间标签旋转45度，避免重叠
+                        fontSize: 12
+                    },
+                    name: '采集时间',
+                    nameLocation: 'middle',
+                    nameGap: 30
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '位移值 (m)',
+                    axisLabel: {
+                        formatter: '{value} m'
+                    }
+                },
+                series: series
+            };
+            return option;
+        }
+
+        // 刷新数据的函数（包含表格+图表）
+        function fetchSensorData() {
+            // 如果配置未修改，不发送请求
+            if (API_BASE_URL === 'http://your_server_ip:5000') {
+                return;
+            }
+            
+            fetch(`${API_BASE_URL}/api/sensor-data`)
+                .then(response => response.json())
+                .then(res => {
+                    const statusEl = document.getElementById('status');
+                    const tableEl = document.getElementById('data-table');
+                    const refreshTimeEl = document.getElementById('refresh-time');
+                    const deviceFilter = document.getElementById('device-filter');
+                    const valueType = document.getElementById('value-type');
+                    
+                    // 更新最后刷新时间
+                    const now = new Date().toLocaleString('zh-CN');
+                    refreshTimeEl.innerText = `最后刷新时间：${now}`;
+
+                    if (res.code === 200 && res.data.length > 0) {
+                        // 成功获取数据
+                        statusEl.className = 'status success';
+                        statusEl.innerText = `✅ 数据加载成功（共${res.data.length}条）`;
+                        allSensorData = res.data; // 保存原始数据
+                        
+                        // 1. 更新表格数据
+                        tableEl.innerHTML = '';
+                        res.data.forEach(item => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${item.id}</td>
+                                <td>${item.device_id}</td>
+                                <td>${item.value_x}</td>
+                                <td>${item.value_y}</td>
+                                <td>${item.monitor_time}</td>
+                            `;
+                            tableEl.appendChild(tr);
+                        });
+
+                        // 2. 更新设备筛选下拉框（去重）
+                        deviceList = [...new Set(res.data.map(item => item.device_id))];
+                        // 清空原有选项（保留"所有设备"）
+                        deviceFilter.innerHTML = '<option value="all">所有设备</option>';
+                        deviceList.forEach(device => {
+                            const option = document.createElement('option');
+                            option.value = device;
+                            option.textContent = device;
+                            deviceFilter.appendChild(option);
+                        });
+
+                        // 3. 更新ECharts图表
+                        const chartOption = formatChartData(
+                            deviceFilter.value,
+                            valueType.value
+                        );
+                        myChart.setOption(chartOption);
+
+                    } else {
+                        // 无数据或失败
+                        statusEl.className = 'status error';
+                        statusEl.innerText = `❌ ${res.msg}（暂无数据）`;
+                        tableEl.innerHTML = '<tr><td colspan="5">暂无数据</td></tr>';
+                        // 清空图表
+                        myChart.setOption({ series: [] });
+                    }
+                })
+                .catch(error => {
+                    const statusEl = document.getElementById('status');
+                    statusEl.className = 'status error';
+                    statusEl.innerText = `❌ 网络/服务异常：${error.message}`;
+                    // 清空图表
+                    myChart.setOption({ series: [] });
+                });
+        }
+
+        // 监听筛选控件变化，实时更新图表
+        document.getElementById('device-filter').addEventListener('change', () => {
+            const chartOption = formatChartData(
+                document.getElementById('device-filter').value,
+                document.getElementById('value-type').value
+            );
+            myChart.setOption(chartOption);
+        });
+        document.getElementById('value-type').addEventListener('change', () => {
+            const chartOption = formatChartData(
+                document.getElementById('device-filter').value,
+                document.getElementById('value-type').value
+            );
+            myChart.setOption(chartOption);
+        });
+
+        // 页面加载时立即获取一次数据
+        fetchSensorData();
+
+        // 每隔1秒自动刷新（和数据写入频率同步）
+        setInterval(fetchSensorData, 1000);
+
+        // 窗口大小变化时，重新调整图表大小
+        window.addEventListener('resize', () => {
+            myChart.resize();
+        });
+    </script>
+</body>
+</html>
