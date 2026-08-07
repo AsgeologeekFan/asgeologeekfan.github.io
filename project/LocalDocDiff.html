@@ -6,6 +6,7 @@
     <title>🔒 LocalDocDiff - 本地文档查重工具</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root {
             --primary-color: #4CAF50;
@@ -450,6 +451,15 @@
             margin: 10px 0;
             border-left: 4px solid var(--danger-color);
         }
+
+        .info-message {
+            background: #e8f5e9;
+            color: var(--primary-color);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid var(--primary-color);
+        }
         
         .save-section {
             text-align: center;
@@ -473,6 +483,41 @@
             margin: 0 5px;
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
+
+        .ref-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid #c8e6c9;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+
+        .ref-file-info {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .ref-format-tag {
+            display: inline-block;
+            background: #fff3e0;
+            color: #e65100;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 8px;
+            border: 1px solid #ffe0b2;
+        }
     </style>
 </head>
 <body>
@@ -483,13 +528,28 @@
             <div class="subtitle">🚀 基于TF-IDF + Cosine Similarity算法 | 💻 100%本地处理 | 🔐 零数据上传</div>
         </div>
         
+        <div class="upload-section" style="background: #fff3e0; border-left-color: var(--warning-color);">
+            <h2>📄 上传参考文件（可选）</h2>
+            <p>上传一份参考文件（支持 .docx ），待对比文档中与参考文件相同的内容将被排除，不计为重复</p>
+
+            <div class="upload-area" id="baseUploadArea">
+                <p>📎 点击选择参考文件 或 拖拽文件到这里（支持 .docx ）</p>
+                <input type="file" id="baseFileInput" accept=".doc,.docx,.txt,.md,.csv,.pdf" style="display: none;">
+                <button class="btn btn-primary" onclick="document.getElementById('baseFileInput').click()">选择参考文件</button>
+            </div>
+
+            <div class="file-list" id="baseFileList">
+                <!-- 参考文件列表将在这里显示 -->
+            </div>
+        </div>
+
         <div class="upload-section">
-            <h2>📁 选择Word文档</h2>
-            <p>选择或拖拽多个Word文档(.docx)到下方区域</p>
-            
+            <h2>📁 选择待对比文档</h2>
+            <p>选择或拖拽多个文档（.docx ）到下方区域</p>
+
             <div class="upload-area" id="uploadArea">
-                <p>📎 点击选择文件 或 拖拽文件到这里</p>
-                <input type="file" id="fileInput" multiple accept=".docx" style="display: none;">
+                <p>📎 点击选择文件 或 拖拽文件到这里（支持 .docx ）</p>
+                <input type="file" id="fileInput" multiple accept=".doc,.docx,.pdf" style="display: none;">
                 <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">选择文件</button>
             </div>
             
@@ -532,6 +592,17 @@
                     <span class="param-value" id="minWordsDisplay">5</span>
                 </div>
                 <small>词数少于这个值的段落会被忽略</small>
+            </div>
+
+            <div class="param-group" id="baseThresholdGroup" style="opacity: 0.5; pointer-events: none;">
+                <label class="param-label">参考排除阈值 (<span id="baseValue">0.95</span>)</label>
+                <div class="slider-container">
+                    <span>0.5</span>
+                    <input type="range" id="baseThreshold" min="0.5" max="0.99" step="0.01" value="0.95">
+                    <span>0.99</span>
+                    <span class="param-value" id="baseDisplay">0.95</span>
+                </div>
+                <small>高于此值的段落会被视为来自参考文件，不参与后续比对</small>
             </div>
         </div>
         
@@ -587,6 +658,9 @@
         let paragraphs = [];
         let results = [];
         let analysisData = {}; // 存储分析数据用于保存
+        let baseFile = null;
+        let baseParagraphs = [];
+        let excludedParagraphs = [];
         
         // DOM元素
         const fileInput = document.getElementById('fileInput');
@@ -615,6 +689,14 @@
         const minWordsDisplay = document.getElementById('minWordsDisplay');
         const similarValue = document.getElementById('similarValue');
         const duplicateValue = document.getElementById('duplicateValue');
+
+        const baseFileInput = document.getElementById('baseFileInput');
+        const baseUploadArea = document.getElementById('baseUploadArea');
+        const baseFileList = document.getElementById('baseFileList');
+        const baseThreshold = document.getElementById('baseThreshold');
+        const baseDisplay = document.getElementById('baseDisplay');
+        const baseValue = document.getElementById('baseValue');
+        const baseThresholdGroup = document.getElementById('baseThresholdGroup');
         
         // 初始化事件监听器
         function initEventListeners() {
@@ -630,18 +712,27 @@
             similarThreshold.addEventListener('input', updateSimilarDisplay);
             duplicateThreshold.addEventListener('input', updateDuplicateDisplay);
             minWords.addEventListener('input', updateMinWordsDisplay);
-            
+            baseThreshold.addEventListener('input', updateBaseDisplay);
+
+            // 参考文件上传事件
+            baseFileInput.addEventListener('change', handleBaseFileSelect);
+            baseUploadArea.addEventListener('dragover', handleDragOver);
+            baseUploadArea.addEventListener('dragleave', handleDragLeave);
+            baseUploadArea.addEventListener('drop', handleBaseFileDrop);
+
             // 按钮事件
             analyzeBtn.addEventListener('click', startAnalysis);
             resetBtn.addEventListener('click', resetApp);
             saveHtmlBtn.addEventListener('click', saveAsHtml);
             saveJsonBtn.addEventListener('click', saveAsJson);
             saveTxtBtn.addEventListener('click', saveAsTxt);
-            
+
             // 初始化显示值
             updateSimilarDisplay();
             updateDuplicateDisplay();
             updateMinWordsDisplay();
+            updateBaseDisplay();
+            updateBaseThresholdUI();
         }
         
         // 更新相似度阈值显示
@@ -662,6 +753,13 @@
         function updateMinWordsDisplay() {
             minWordsDisplay.textContent = minWords.value;
         }
+
+        // 更新参考排除阈值显示
+        function updateBaseDisplay() {
+            const value = parseFloat(baseThreshold.value).toFixed(2);
+            baseDisplay.textContent = value;
+            baseValue.textContent = value;
+        }
         
         // 处理文件选择
         function handleFileSelect(e) {
@@ -672,12 +770,14 @@
         // 处理拖放
         function handleDragOver(e) {
             e.preventDefault();
-            uploadArea.classList.add('dragover');
+            e.currentTarget.classList.add('dragover');
         }
-        
+
         function handleDragLeave(e) {
             e.preventDefault();
-            uploadArea.classList.remove('dragover');
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                e.currentTarget.classList.remove('dragover');
+            }
         }
         
         function handleFileDrop(e) {
@@ -686,15 +786,103 @@
             const files = e.dataTransfer.files;
             processFiles(files);
         }
-        
+
+        // 处理参考文件选择
+        function handleBaseFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) setBaseFile(file);
+            baseFileInput.value = '';
+        }
+
+        // 处理参考文件拖放
+        function handleBaseFileDrop(e) {
+            e.preventDefault();
+            baseUploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) setBaseFile(file);
+        }
+
+        // 支持的参考文件格式
+        const SUPPORTED_REF_EXTENSIONS = ['doc', 'docx', 'txt', 'md', 'csv', 'pdf'];
+
+        // 设置参考文件
+        function setBaseFile(file) {
+            const ext = file.name.toLowerCase().split('.').pop();
+            if (!SUPPORTED_REF_EXTENSIONS.includes(ext)) {
+                showError(`文件 "${file.name}" 格式不支持，请上传 .doc / .docx / .txt / .md / .csv / .pdf 文件`, baseUploadArea);
+                return;
+            }
+            if (baseFile) {
+                showInfo(`已替换参考文件为：${file.name}`, baseUploadArea);
+            }
+            baseFile = file;
+            renderBaseFileList();
+            updateBaseThresholdUI();
+            updateAnalyzeButtonState();
+        }
+
+        // 渲染参考文件列表
+        function renderBaseFileList() {
+            baseFileList.innerHTML = '';
+            if (!baseFile) return;
+            const ext = baseFile.name.toLowerCase().split('.').pop();
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.style.alignItems = 'center';
+            fileItem.innerHTML = `
+                <div class="ref-file-info">
+                    <span style="font-size: 1.2rem;">📄</span>
+                    <div class="file-name" style="margin-left: 6px;">${escapeHtml(baseFile.name)}</div>
+                    <span class="ref-format-tag">${escapeHtml(ext)}</span>
+                </div>
+                <span class="ref-status-badge">✅ 已加载</span>
+                <div class="file-size">${formatFileSize(baseFile.size)}</div>
+                <button class="remove-btn" aria-label="删除参考文件 ${escapeHtml(baseFile.name)}">删除</button>
+            `;
+            baseFileList.appendChild(fileItem);
+            fileItem.querySelector('.remove-btn').addEventListener('click', function() {
+                baseFile = null;
+                baseFileList.innerHTML = '';
+                updateBaseThresholdUI();
+                updateAnalyzeButtonState();
+            });
+        }
+
+        // 更新参考阈值控件状态
+        function updateBaseThresholdUI() {
+            if (baseFile) {
+                baseThresholdGroup.style.opacity = '1';
+                baseThresholdGroup.style.pointerEvents = 'auto';
+                baseThreshold.disabled = false;
+            } else {
+                baseThresholdGroup.style.opacity = '0.5';
+                baseThresholdGroup.style.pointerEvents = 'none';
+                baseThreshold.disabled = true;
+            }
+        }
+
+        // 分析按钮是否可用
+        function canAnalyze() {
+            return uploadedFiles.length >= 2 || (baseFile && uploadedFiles.length >= 1);
+        }
+
+        // 更新分析按钮状态
+        function updateAnalyzeButtonState() {
+            analyzeBtn.disabled = !canAnalyze();
+        }
+
+        // 支持的待对比文档格式
+        const SUPPORTED_CMP_EXTENSIONS = ['doc', 'docx', 'pdf'];
+
         // 处理上传的文件
         function processFiles(files) {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 
                 // 检查文件类型
-                if (!file.name.toLowerCase().endsWith('.docx')) {
-                    showError(`文件 "${file.name}" 不是Word文档(.docx)，已跳过`);
+                const ext = file.name.toLowerCase().split('.').pop();
+                if (!SUPPORTED_CMP_EXTENSIONS.includes(ext)) {
+                    showError(`文件 "${file.name}" 格式不支持，请上传 .doc / .docx / .pdf 文件，已跳过`);
                     continue;
                 }
                 
@@ -709,8 +897,8 @@
             }
             
             // 更新分析按钮状态
-            analyzeBtn.disabled = uploadedFiles.length < 2;
-            
+            updateAnalyzeButtonState();
+
             // 清空文件输入，以便可以选择相同的文件
             fileInput.value = '';
         }
@@ -721,11 +909,16 @@
             fileItem.className = 'file-item';
             
             const fileSize = formatFileSize(file.size);
+            const ext = file.name.toLowerCase().split('.').pop();
             
             fileItem.innerHTML = `
-                <div class="file-name">${file.name}</div>
+                <div class="ref-file-info">
+                    <span style="font-size: 1.2rem;">📄</span>
+                    <div class="file-name" style="margin-left: 6px;">${escapeHtml(file.name)}</div>
+                    <span class="ref-format-tag">${escapeHtml(ext)}</span>
+                </div>
                 <div class="file-size">${fileSize}</div>
-                <button class="remove-btn" data-filename="${file.name}">删除</button>
+                <button class="remove-btn" data-filename="${escapeHtml(file.name)}">删除</button>
             `;
             
             fileList.appendChild(fileItem);
@@ -742,7 +935,7 @@
         // 删除文件
         function removeFile(filename) {
             uploadedFiles = uploadedFiles.filter(file => file.name !== filename);
-            analyzeBtn.disabled = uploadedFiles.length < 2;
+            updateAnalyzeButtonState();
         }
         
         // 格式化文件大小
@@ -755,47 +948,67 @@
         }
         
         // 显示错误消息
-        function showError(message) {
+        function showError(message, anchor = uploadArea) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
             errorDiv.textContent = message;
-            
+
             // 插入到上传区域下方
-            uploadArea.parentNode.insertBefore(errorDiv, uploadArea.nextSibling);
-            
+            anchor.parentNode.insertBefore(errorDiv, anchor.nextSibling);
+
             // 3秒后自动移除
             setTimeout(() => {
                 errorDiv.remove();
             }, 3000);
         }
+
+        // 显示提示消息
+        function showInfo(message, anchor = uploadArea) {
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'info-message';
+            infoDiv.textContent = message;
+
+            // 插入到上传区域下方
+            anchor.parentNode.insertBefore(infoDiv, anchor.nextSibling);
+
+            // 3秒后自动移除
+            setTimeout(() => {
+                infoDiv.remove();
+            }, 3000);
+        }
         
         // 开始分析
         async function startAnalysis() {
-            if (uploadedFiles.length < 2) {
-                showError('请至少上传两个文档进行比较');
+            if (!canAnalyze()) {
+                showError('请至少上传两个文档进行比较，或上传一个参考文件和至少一个待比对文档');
                 return;
             }
-            
+
             // 重置结果
             paragraphs = [];
+            baseParagraphs = [];
             results = [];
+            excludedParagraphs = [];
             analysisData = {};
-            
+
             // 显示进度
             progressSection.style.display = 'block';
             resultsSection.style.display = 'none';
             analyzeBtn.disabled = true;
-            
+
             try {
                 // 步骤1: 读取所有文档
                 await readAllDocuments();
-                
-                // 步骤2: 分析相似度
+
+                // 步骤2: 排除参考文件内容
+                await excludeBaseParagraphs();
+
+                // 步骤3: 分析相似度
                 await analyzeSimilarity();
-                
-                // 步骤3: 显示结果
+
+                // 步骤4: 显示结果
                 displayResults();
-                
+
             } catch (error) {
                 showError(`分析过程中出现错误: ${error.message}`);
                 console.error(error);
@@ -806,33 +1019,111 @@
         
         // 读取所有文档
         async function readAllDocuments() {
-            updateProgress(0, `正在处理，请稍后`, `准备读取 ${uploadedFiles.length} 个文档`);
-            
+            const totalFiles = uploadedFiles.length + (baseFile ? 1 : 0);
+            updateProgress(0, `正在处理，请稍后`, `准备读取 ${totalFiles} 个文档`);
+
+            if (baseFile) {
+                updateProgress(0, `正在处理，请稍后`, `正在读取参考文件: ${baseFile.name}`);
+                try {
+                    baseParagraphs = await readReferenceFile(baseFile);
+                } catch (error) {
+                    showError(`参考文件 "${baseFile.name}" 解析失败: ${error.message}`);
+                    baseFile = null;
+                }
+            }
+
             for (let i = 0; i < uploadedFiles.length; i++) {
                 const file = uploadedFiles[i];
-                const progress = (i / uploadedFiles.length) * 40;
+                const progress = ((i + (baseFile ? 1 : 0)) / totalFiles) * 30;
                 updateProgress(
-                    progress, 
-                    `正在处理，请稍后`, 
+                    progress,
+                    `正在处理，请稍后`,
                     `正在读取文档 (${i+1}/${uploadedFiles.length}): ${file.name}`
                 );
-                
+
                 try {
-                    const fileParagraphs = await readDocxFile(file);
+                    const fileParagraphs = await readComparisonFile(file);
                     paragraphs.push(...fileParagraphs);
                 } catch (error) {
                     throw new Error(`读取文件 "${file.name}" 时出错: ${error.message}`);
                 }
             }
-            
+
             updateProgress(
-                40, 
-                `正在处理，请稍后`, 
-                `已成功读取 ${uploadedFiles.length} 个文档，共 ${paragraphs.length} 个段落`
+                30,
+                `正在处理，请稍后`,
+                `已成功读取 ${totalFiles} 个文档，参考 ${baseParagraphs.length} 段，待比对 ${paragraphs.length} 段`
             );
         }
         
-        // 读取单个Word文档
+        // 排除来自参考文件的段落
+        async function excludeBaseParagraphs() {
+            const baseThresholdValue = parseFloat(baseThreshold.value);
+            const minWordsValue = parseInt(minWords.value);
+
+            if (!baseFile || baseParagraphs.length === 0) {
+                updateProgress(40, '正在处理，请稍后', '未上传参考文件，跳过排除步骤');
+                return;
+            }
+
+            updateProgress(30, '正在处理，请稍后', '正在排除来自参考文件的内容...');
+
+            const validBaseParagraphs = baseParagraphs.filter(p => p.word_count >= minWordsValue);
+            const validParagraphs = paragraphs.filter(p => p.word_count >= minWordsValue);
+
+            if (validBaseParagraphs.length === 0) {
+                updateProgress(40, '正在处理，请稍后', '参考文件没有有效段落，跳过排除步骤');
+                return;
+            }
+
+            const allTexts = validBaseParagraphs.map(p => p.processed_text).concat(validParagraphs.map(p => p.processed_text));
+            const { tfidfMatrix } = computeTfidfMatrix(allTexts);
+            const baseMatrix = tfidfMatrix.slice(0, validBaseParagraphs.length);
+            const paraMatrix = tfidfMatrix.slice(validBaseParagraphs.length);
+
+            for (let i = 0; i < validParagraphs.length; i++) {
+                const progress = 30 + (i / validParagraphs.length) * 10;
+                updateProgress(progress, '正在处理，请稍后', `正在排除参考内容 (${i+1}/${validParagraphs.length})`);
+
+                const para = validParagraphs[i];
+
+                let maxScore = 0;
+                let bestBaseIdx = -1;
+
+                for (let j = 0; j < baseMatrix.length; j++) {
+                    const score = computePairCosineSimilarity(paraMatrix[i], baseMatrix[j]);
+                    if (score > maxScore) {
+                        maxScore = score;
+                        bestBaseIdx = j;
+                    }
+                }
+
+                if (maxScore >= baseThresholdValue && bestBaseIdx >= 0) {
+                    para.isExcluded = true;
+                    para.excludeReason = `与参考文件段落 ${validBaseParagraphs[bestBaseIdx].para_idx + 1} 相似度 ${maxScore.toFixed(3)}`;
+                    excludedParagraphs.push({
+                        doc: para.doc,
+                        para_idx: para.para_idx + 1,
+                        raw_text: para.raw_text,
+                        base_para_idx: validBaseParagraphs[bestBaseIdx].para_idx + 1,
+                        base_raw_text: validBaseParagraphs[bestBaseIdx].raw_text,
+                        score: maxScore
+                    });
+                }
+            }
+
+            updateProgress(40, '正在处理，请稍后', `已排除 ${excludedParagraphs.length} 段来自参考文件的内容`);
+        }
+
+        // 计算两个向量的余弦相似度
+        function computePairCosineSimilarity(vecA, vecB) {
+            const normA = computeNorm(vecA);
+            const normB = computeNorm(vecB);
+            if (normA === 0 || normB === 0) return 0;
+            return computeDotProduct(vecA, vecB) / (normA * normB);
+        }
+
+        // 读取单个 .docx 文档
         async function readDocxFile(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -858,7 +1149,143 @@
                 reader.readAsArrayBuffer(file);
             });
         }
-        
+
+        // 设置 pdf.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // 读取参考文件（根据扩展名自动选择解析方式）
+        async function readReferenceFile(file) {
+            const ext = file.name.toLowerCase().split('.').pop();
+            switch (ext) {
+                case 'doc':
+                    return await readDocFile(file);
+                case 'docx':
+                    return await readDocxFile(file);
+                case 'txt':
+                case 'md':
+                    return await readTextFile(file);
+                case 'csv':
+                    return await readCsvFile(file);
+                case 'pdf':
+                    return await readPdfFile(file);
+                default:
+                    throw new Error(`不支持的文件格式: .${ext}，请上传 .doc / .docx / .txt / .md / .csv / .pdf 文件`);
+            }
+        }
+
+        // 读取待对比文档（根据扩展名自动选择解析方式）
+        async function readComparisonFile(file) {
+            const ext = file.name.toLowerCase().split('.').pop();
+            switch (ext) {
+                case 'doc':
+                    return await readDocFile(file);
+                case 'docx':
+                    return await readDocxFile(file);
+                case 'pdf':
+                    return await readPdfFile(file);
+                default:
+                    throw new Error(`不支持的文件格式: .${ext}，请上传 .doc / .docx / .pdf 文件`);
+            }
+        }
+
+        // 读取纯文本文件（.txt / .md）
+        function readTextFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const text = event.target.result;
+                    const fileParagraphs = processDocumentText(text, file.name);
+                    resolve(fileParagraphs);
+                };
+                reader.onerror = function() {
+                    reject(new Error('读取文本文件失败'));
+                };
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        // 读取 CSV 文件（使用 PapaParse）
+        function readCsvFile(file) {
+            return new Promise((resolve, reject) => {
+                Papa.parse(file, {
+                    complete: function(results) {
+                        let text = '';
+                        results.data.forEach(row => {
+                            if (Array.isArray(row)) {
+                                text += row.filter(cell => cell && cell.trim()).join(' ') + '\n';
+                            } else if (row && row.trim()) {
+                                text += row + '\n';
+                            }
+                        });
+                        const fileParagraphs = processDocumentText(text, file.name);
+                        resolve(fileParagraphs);
+                    },
+                    error: function(error) {
+                        reject(new Error(`CSV解析失败: ${error.message}`));
+                    }
+                });
+            });
+        }
+
+        // 读取 PDF 文件（使用 pdf.js）
+        async function readPdfFile(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const pageText = content.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n';
+            }
+            if (!fullText.trim()) {
+                throw new Error('PDF文件中未提取到任何文本内容（可能是扫描件或图片型PDF）');
+            }
+            return processDocumentText(fullText, file.name);
+        }
+
+        // 读取 .doc 文件（Word 97-2003 二进制格式）
+        // mammoth.js 仅支持 .docx，此处通过二进制扫描提取文本
+        async function readDocFile(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+
+            // .doc 文件中文本通常以 UTF-16LE 存储，尝试解码
+            let rawText = '';
+            try {
+                rawText = new TextDecoder('utf-16le').decode(bytes);
+            } catch (e) {
+                // 降级：逐字节读取为 Latin-1
+                for (let i = 0; i < bytes.length; i++) {
+                    rawText += String.fromCharCode(bytes[i]);
+                }
+            }
+
+            // Word 用 0x0D 作为段落分隔符
+            rawText = rawText.replace(/\r/g, '\n');
+
+            // 提取可读文本片段（至少 3 个连续可读字符）
+            // 匹配中文、英文、数字及常见标点
+            const readableRegex = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef a-zA-Z0-9][\u4e00-\u9fff\u3000-\u303f\uff00-\uffef a-zA-Z0-9\s.,;:!?'"\-—…()（）《》、，。；：！？"""''【】\[\]\/\\@#$%^&*+=<>{}|~`]{2,}/g;
+            const matches = rawText.match(readableRegex);
+
+            let text = '';
+            if (matches && matches.length > 0) {
+                text = matches.join('\n');
+            } else {
+                // 降级：仅过滤控制字符
+                text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim();
+            }
+
+            if (!text.trim()) {
+                throw new Error('.doc 文件中未提取到有效文本，建议另存为 .docx 格式后重试');
+            }
+
+            return processDocumentText(text, file.name);
+        }
+
         // 处理文档文本
         function processDocumentText(text, fileName) {
             const rawParagraphs = text.split('\n').filter(p => p.trim().length > 0);
@@ -876,7 +1303,9 @@
                     para_idx: i,
                     raw_text: rawText,
                     processed_text: processedText,
-                    word_count: wordCount
+                    word_count: wordCount,
+                    isExcluded: false,
+                    excludeReason: ''
                 });
             }
             
@@ -899,19 +1328,60 @@
             
             return processed;
         }
-        
+
+        // HTML 转义，防止用户文档内容破坏页面结构或触发脚本
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/`/g, '&#96;')
+                .replace(/\$/g, '&#36;');
+        }
+
         // 分析相似度 - 使用TF-IDF和余弦相似度
         async function analyzeSimilarity() {
             const duplicateThresholdValue = parseFloat(duplicateThreshold.value);
             const similarThresholdValue = parseFloat(similarThreshold.value);
             const minWordsValue = parseInt(minWords.value);
-            
+            const baseThresholdValue = baseFile ? parseFloat(baseThreshold.value) : null;
+
             updateProgress(40, '正在处理，请稍后', '正在准备分析数据...');
-            
-            // 过滤掉词数太少的段落
-            const validParagraphs = paragraphs.filter(p => p.word_count >= minWordsValue);
-            
-            if (validParagraphs.length < 2) {
+
+            // 过滤掉词数太少或被参考排除的段落
+            const validParagraphs = paragraphs.filter(p => p.word_count >= minWordsValue && !p.isExcluded);
+
+            if (validParagraphs.length === 0) {
+                if (baseFile && excludedParagraphs.length > 0) {
+                    analysisData = {
+                        timestamp: new Date().toISOString(),
+                        files: uploadedFiles.map(f => f.name),
+                        referenceFile: baseFile ? baseFile.name : null,
+                        parameters: {
+                            similarThreshold: similarThresholdValue,
+                            duplicateThreshold: duplicateThresholdValue,
+                            minWords: minWordsValue,
+                            baseThreshold: baseThresholdValue
+                        },
+                        statistics: {
+                            totalDocuments: uploadedFiles.length,
+                            totalParagraphs: paragraphs.length,
+                            validParagraphs: validParagraphs.length,
+                            totalMatches: 0,
+                            duplicateCount: 0,
+                            similarCount: 0,
+                            baseParagraphsExcluded: excludedParagraphs.length,
+                            baseParagraphsTotal: baseParagraphs.length,
+                            allValidParagraphsExcluded: true
+                        },
+                        results: [],
+                        excludedParagraphs: excludedParagraphs
+                    };
+                    return;
+                }
                 throw new Error('没有足够多的有效段落进行分析');
             }
             
@@ -983,10 +1453,12 @@
             analysisData = {
                 timestamp: new Date().toISOString(),
                 files: uploadedFiles.map(f => f.name),
+                referenceFile: baseFile ? baseFile.name : null,
                 parameters: {
                     similarThreshold: similarThresholdValue,
                     duplicateThreshold: duplicateThresholdValue,
-                    minWords: minWordsValue
+                    minWords: minWordsValue,
+                    baseThreshold: baseThresholdValue
                 },
                 statistics: {
                     totalDocuments: uploadedFiles.length,
@@ -994,9 +1466,13 @@
                     validParagraphs: validParagraphs.length,
                     totalMatches: results.length,
                     duplicateCount: results.filter(r => r.type === "完全重复").length,
-                    similarCount: results.filter(r => r.type === "相似").length
+                    similarCount: results.filter(r => r.type === "相似").length,
+                    baseParagraphsExcluded: excludedParagraphs.length,
+                    baseParagraphsTotal: baseParagraphs.length,
+                    allValidParagraphsExcluded: false
                 },
-                results: results
+                results: results,
+                excludedParagraphs: excludedParagraphs
             };
         }
         
@@ -1122,19 +1598,39 @@
         // 显示结果
         function displayResults() {
             updateProgress(100, '分析完成！', '分析已完成，正在显示结果...');
-            
+
             // 更新摘要
             const duplicateCount = results.filter(r => r.type === "完全重复").length;
             const similarCount = results.filter(r => r.type === "相似").length;
-            
-            resultsSummary.innerHTML = `
-                <h3>分析概要</h3>
-                <p>本次分析共检测了 <strong>${uploadedFiles.length}</strong> 个文档，发现 <strong>${results.length}</strong> 处文本匹配。</p>
-                <p>使用参数：相似度阈值 ${similarThreshold.value}，完全重复阈值 ${duplicateThreshold.value}，最小词数 ${minWords.value}</p>
-            `;
-            
+            const baseThresholdDisplay = baseFile ? `，参考排除阈值 ${baseThreshold.value}` : '';
+            const allExcluded = analysisData.statistics && analysisData.statistics.allValidParagraphsExcluded;
+            const refFileDisplay = baseFile ? `<p>参考文件：<strong>${escapeHtml(baseFile.name)}</strong></p>` : '';
+
+            if (allExcluded) {
+                resultsSummary.innerHTML = `
+                    <h3>分析概要</h3>
+                    <p>本次分析共检测了 <strong>${uploadedFiles.length}</strong> 个文档，发现 <strong>${results.length}</strong> 处文本匹配。</p>
+                    ${refFileDisplay}
+                    <p>已排除 <strong>${excludedParagraphs.length}</strong> 段来自参考文件的内容。</p>
+                    <p style="color: var(--warning-color);">所有有效段落均被参考文件排除。</p>
+                    <p>使用参数：相似度阈值 ${similarThreshold.value}，完全重复阈值 ${duplicateThreshold.value}，最小词数 ${minWords.value}${baseThresholdDisplay}</p>
+                `;
+            } else {
+                resultsSummary.innerHTML = `
+                    <h3>分析概要</h3>
+                    <p>本次分析共检测了 <strong>${uploadedFiles.length}</strong> 个文档，发现 <strong>${results.length}</strong> 处文本匹配。</p>
+                    ${refFileDisplay}
+                    <p>已排除 <strong>${excludedParagraphs.length}</strong> 段来自参考文件的内容。</p>
+                    <p>使用参数：相似度阈值 ${similarThreshold.value}，完全重复阈值 ${duplicateThreshold.value}，最小词数 ${minWords.value}${baseThresholdDisplay}</p>
+                `;
+            }
+
             // 更新统计信息
             resultsStats.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-number">${excludedParagraphs.length}</div>
+                    <div>已排除段落</div>
+                </div>
                 <div class="stat-item">
                     <div class="stat-number">${duplicateCount}</div>
                     <div>完全重复</div>
@@ -1148,62 +1644,110 @@
                     <div>分析文档数</div>
                 </div>
             `;
-            
+
+            // 构建已排除内容面板
+            let excludedHTML = '';
+            if (excludedParagraphs.length > 0) {
+                excludedHTML = `<h3>已排除内容</h3>
+                <button class="toggle-btn" id="toggleExcludedBtn">展开已排除内容 (${excludedParagraphs.length})</button>
+                <div id="excludedDetails" style="display: none; margin-top: 15px;">`;
+
+                const grouped = {};
+                excludedParagraphs.forEach(item => {
+                    if (!grouped[item.doc]) grouped[item.doc] = [];
+                    grouped[item.doc].push(item);
+                });
+
+                for (const [doc, items] of Object.entries(grouped)) {
+                    excludedHTML += `<h4>📄 ${escapeHtml(doc)}</h4>`;
+                    items.forEach(item => {
+                        excludedHTML += `
+                        <div class="doc-info" style="border-left-color: var(--warning-color);">
+                            <div class="doc-title">段落 ${item.para_idx}（相似度: ${item.score.toFixed(3)}）</div>
+                            <div class="text-content">${escapeHtml(item.raw_text)}</div>
+                            <div class="doc-title" style="margin-top: 10px;">匹配参考段落 ${item.base_para_idx}</div>
+                            <div class="text-content">${escapeHtml(item.base_raw_text)}</div>
+                        </div>`;
+                    });
+                }
+
+                excludedHTML += `</div>`;
+            }
+
             // 显示匹配结果
             if (results.length === 0) {
-                matchResults.innerHTML = '<p>未发现重复或相似的文本。</p>';
+                matchResults.innerHTML = excludedHTML + '<p>未发现重复或相似的文本。</p>';
             } else {
                 let matchHTML = '<h3>详细匹配结果</h3>';
-                
+
                 // 按相似度排序
                 const sortedResults = [...results].sort((a, b) => b.score - a.score);
-                
+
                 sortedResults.forEach((result, index) => {
                     const typeClass = result.type === "完全重复" ? "duplicate" : "similar";
-                    const shortText1 = result.text1.length > 200 ? result.text1.substring(0, 200) + "..." : result.text1;
-                    const shortText2 = result.text2.length > 200 ? result.text2.substring(0, 200) + "..." : result.text2;
-                    
+                    const rawText1 = result.text1;
+                    const rawText2 = result.text2;
+                    const shortText1 = escapeHtml(rawText1.length > 200 ? rawText1.substring(0, 200) + "..." : rawText1);
+                    const shortText2 = escapeHtml(rawText2.length > 200 ? rawText2.substring(0, 200) + "..." : rawText2);
+                    const fullText1 = escapeHtml(rawText1);
+                    const fullText2 = escapeHtml(rawText2);
+
                     matchHTML += `
                         <div class="match-item">
                             <div class="match-header">
                                 <span class="match-type ${typeClass}">#${index+1} ${result.type}</span>
                                 <span class="similarity-score">相似度: ${result.score.toFixed(3)}</span>
                             </div>
-                            
+
                             <div class="doc-info">
-                                <div class="doc-title">📄 文档A: ${result.doc1} (段落 ${result.para1})</div>
-                                <div class="text-content" id="text1_${index}">${shortText1}</div>
-                                ${result.text1.length > 200 ? `<button class="toggle-btn" onclick="toggleFullText('text1_${index}', '${result.text1.replace(/'/g, "\\'")}', this)">展开全文</button>` : ''}
+                                <div class="doc-title">📄 文档A: ${escapeHtml(result.doc1)} (段落 ${result.para1})</div>
+                                <div class="text-content" id="text1_${index}" data-full-text="${fullText1}">${shortText1}</div>
+                                ${rawText1.length > 200 ? `<button class="toggle-btn" onclick="toggleFullText('text1_${index}', this)">展开全文</button>` : ''}
                             </div>
-                            
+
                             <div class="doc-info">
-                                <div class="doc-title">📄 文档B: ${result.doc2} (段落 ${result.para2})</div>
-                                <div class="text-content" id="text2_${index}">${shortText2}</div>
-                                ${result.text2.length > 200 ? `<button class="toggle-btn" onclick="toggleFullText('text2_${index}', '${result.text2.replace(/'/g, "\\'")}', this)">展开全文</button>` : ''}
+                                <div class="doc-title">📄 文档B: ${escapeHtml(result.doc2)} (段落 ${result.para2})</div>
+                                <div class="text-content" id="text2_${index}" data-full-text="${fullText2}">${shortText2}</div>
+                                ${rawText2.length > 200 ? `<button class="toggle-btn" onclick="toggleFullText('text2_${index}', this)">展开全文</button>` : ''}
                             </div>
                         </div>
                     `;
                 });
-                
-                matchResults.innerHTML = matchHTML;
+
+                matchResults.innerHTML = excludedHTML + matchHTML;
             }
-            
+
+            const toggleBtn = document.getElementById('toggleExcludedBtn');
+            const excludedDetails = document.getElementById('excludedDetails');
+            if (toggleBtn && excludedDetails) {
+                toggleBtn.addEventListener('click', function() {
+                    if (excludedDetails.style.display === 'none') {
+                        excludedDetails.style.display = 'block';
+                        toggleBtn.textContent = `收起已排除内容 (${excludedParagraphs.length})`;
+                    } else {
+                        excludedDetails.style.display = 'none';
+                        toggleBtn.textContent = `展开已排除内容 (${excludedParagraphs.length})`;
+                    }
+                });
+            }
+
             // 显示结果区域
             resultsSection.style.display = 'block';
-            
+
             // 滚动到结果区域
             resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
         
         // 切换全文显示
-        function toggleFullText(elementId, fullText, button) {
+        function toggleFullText(elementId, button) {
             const element = document.getElementById(elementId);
-            
+            const fullText = element.getAttribute('data-full-text');
+            const shortText = fullText.length > 200 ? fullText.substring(0, 200) + "..." : fullText;
+
             if (element.textContent.length < fullText.length) {
                 element.textContent = fullText;
                 button.textContent = '收起文本';
             } else {
-                const shortText = fullText.length > 200 ? fullText.substring(0, 200) + "..." : fullText;
                 element.textContent = shortText;
                 button.textContent = '展开全文';
             }
@@ -1240,11 +1784,14 @@
         function generateHtmlReport() {
             const duplicateCount = results.filter(r => r.type === "完全重复").length;
             const similarCount = results.filter(r => r.type === "相似").length;
-            
+            const baseThresholdDisplay = baseFile ? `，参考排除阈值 ${baseThreshold.value}` : '';
+            const allExcluded = analysisData.statistics && analysisData.statistics.allValidParagraphsExcluded;
+            const warningHtml = allExcluded ? '<p style="color: #ff9800;"><strong>所有有效段落均被参考文件排除。</strong></p>' : '';
+
             let resultsHtml = '';
             if (results.length > 0) {
                 const sortedResults = [...results].sort((a, b) => b.score - a.score);
-                
+
                 sortedResults.forEach((result, index) => {
                     resultsHtml += `
                     <div class="match-item">
@@ -1252,15 +1799,15 @@
                             <span class="match-type ${result.type === "完全重复" ? "duplicate" : "similar"}">#${index+1} ${result.type}</span>
                             <span class="similarity-score">相似度: ${result.score.toFixed(3)}</span>
                         </div>
-                        
+
                         <div class="doc-info">
-                            <div class="doc-title">📄 文档A: ${result.doc1} (段落 ${result.para1})</div>
-                            <div class="text-content">${result.text1}</div>
+                            <div class="doc-title">📄 文档A: ${escapeHtml(result.doc1)} (段落 ${result.para1})</div>
+                            <div class="text-content">${escapeHtml(result.text1)}</div>
                         </div>
-                        
+
                         <div class="doc-info">
-                            <div class="doc-title">📄 文档B: ${result.doc2} (段落 ${result.para2})</div>
-                            <div class="text-content">${result.text2}</div>
+                            <div class="doc-title">📄 文档B: ${escapeHtml(result.doc2)} (段落 ${result.para2})</div>
+                            <div class="text-content">${escapeHtml(result.text2)}</div>
                         </div>
                     </div>
                     `;
@@ -1268,7 +1815,30 @@
             } else {
                 resultsHtml = '<p>未发现重复或相似的文本。</p>';
             }
-            
+
+            let excludedHtml = '';
+            if (excludedParagraphs.length > 0) {
+                excludedHtml = '<h2>已排除内容</h2>';
+                const grouped = {};
+                excludedParagraphs.forEach(item => {
+                    if (!grouped[item.doc]) grouped[item.doc] = [];
+                    grouped[item.doc].push(item);
+                });
+
+                for (const [doc, items] of Object.entries(grouped)) {
+                    excludedHtml += `<h3>📄 ${escapeHtml(doc)}</h3>`;
+                    items.forEach(item => {
+                        excludedHtml += `
+                        <div class="doc-info" style="border-left-color: #ff9800;">
+                            <div class="doc-title">段落 ${item.para_idx}（相似度: ${item.score.toFixed(3)}）</div>
+                            <div class="text-content">${escapeHtml(item.raw_text)}</div>
+                            <div class="doc-title" style="margin-top: 10px;">匹配参考段落 ${item.base_para_idx}</div>
+                            <div class="text-content">${escapeHtml(item.base_raw_text)}</div>
+                        </div>`;
+                    });
+                }
+            }
+
             return `<!DOCTYPE html>
             <html lang="zh-CN">
             <head>
@@ -1276,113 +1846,113 @@
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>文档查重报告</title>
                 <style>
-                    body { 
-                        font-family: 'Microsoft YaHei', Arial, sans-serif; 
-                        line-height: 1.6; 
-                        margin: 0; 
-                        padding: 20px; 
+                    body {
+                        font-family: 'Microsoft YaHei', Arial, sans-serif;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 20px;
                         background-color: #f5f5f5;
                         color: #333;
                     }
-                    .container { 
-                        max-width: 1200px; 
-                        margin: 0 auto; 
-                        background: white; 
-                        padding: 30px; 
-                        border-radius: 10px; 
+                    .container {
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        background: white;
+                        padding: 30px;
+                        border-radius: 10px;
                         box-shadow: 0 0 20px rgba(0,0,0,0.1);
                     }
-                    .header { 
-                        text-align: center; 
-                        border-bottom: 3px solid #4CAF50; 
-                        padding-bottom: 20px; 
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #4CAF50;
+                        padding-bottom: 20px;
                         margin-bottom: 30px;
                     }
-                    .header h1 { 
-                        color: #2c3e50; 
+                    .header h1 {
+                        color: #2c3e50;
                         margin-bottom: 10px;
                     }
-                    .summary { 
-                        background: #e8f5e9; 
-                        padding: 15px; 
-                        border-radius: 5px; 
+                    .summary {
+                        background: #e8f5e9;
+                        padding: 15px;
+                        border-radius: 5px;
                         margin-bottom: 20px;
                         border-left: 4px solid #4CAF50;
                     }
-                    .stats { 
-                        display: flex; 
-                        justify-content: space-around; 
-                        margin: 20px 0; 
+                    .stats {
+                        display: flex;
+                        justify-content: space-around;
+                        margin: 20px 0;
                         text-align: center;
                     }
-                    .stat-item { 
-                        background: white; 
-                        padding: 15px; 
-                        border-radius: 8px; 
+                    .stat-item {
+                        background: white;
+                        padding: 15px;
+                        border-radius: 8px;
                         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                         flex: 1;
                         margin: 0 10px;
                     }
-                    .stat-number { 
-                        font-size: 2em; 
-                        font-weight: bold; 
+                    .stat-number {
+                        font-size: 2em;
+                        font-weight: bold;
                         color: #4CAF50;
                     }
-                    .match-item { 
-                        background: white; 
-                        border: 1px solid #ddd; 
-                        border-radius: 8px; 
-                        margin-bottom: 20px; 
-                        padding: 20px; 
+                    .match-item {
+                        background: white;
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        margin-bottom: 20px;
+                        padding: 20px;
                         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                     }
-                    .match-header { 
-                        display: flex; 
-                        justify-content: space-between; 
-                        align-items: center; 
-                        margin-bottom: 15px; 
-                        padding-bottom: 10px; 
+                    .match-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 15px;
+                        padding-bottom: 10px;
                         border-bottom: 1px solid #eee;
                     }
-                    .match-type { 
-                        font-weight: bold; 
-                        padding: 5px 12px; 
-                        border-radius: 20px; 
+                    .match-type {
+                        font-weight: bold;
+                        padding: 5px 12px;
+                        border-radius: 20px;
                         color: white;
                     }
                     .duplicate { background-color: #f44336; }
                     .similar { background-color: #ff9800; }
-                    .similarity-score { 
-                        font-size: 1.2em; 
-                        font-weight: bold; 
+                    .similarity-score {
+                        font-size: 1.2em;
+                        font-weight: bold;
                         color: #2196F3;
                     }
-                    .doc-info { 
-                        margin-bottom: 15px; 
-                        padding: 12px; 
-                        background: #f9f9f9; 
+                    .doc-info {
+                        margin-bottom: 15px;
+                        padding: 12px;
+                        background: #f9f9f9;
                         border-radius: 5px;
                         border-left: 3px solid #2196F3;
                     }
-                    .doc-title { 
-                        font-weight: bold; 
-                        color: #2c3e50; 
+                    .doc-title {
+                        font-weight: bold;
+                        color: #2c3e50;
                         margin-bottom: 5px;
                     }
-                    .text-content { 
-                        background: #f8f9fa; 
-                        padding: 15px; 
-                        border-radius: 5px; 
+                    .text-content {
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 5px;
                         border-left: 3px solid #9e9e9e;
                         margin-top: 8px;
                         white-space: pre-wrap;
                         color: #555;
                     }
-                    .footer { 
-                        text-align: center; 
-                        margin-top: 30px; 
-                        padding-top: 20px; 
-                        border-top: 1px solid #ddd; 
+                    .footer {
+                        text-align: center;
+                        margin-top: 30px;
+                        padding-top: 20px;
+                        border-top: 1px solid #ddd;
                         color: #777;
                     }
                 </style>
@@ -1393,14 +1963,21 @@
                         <h1>🔒 LocalDocDiff - 文档相似性分析报告</h1>
                         <p>生成时间：${new Date().toLocaleString()}</p>
                     </div>
-                    
+
                     <div class="summary">
                         <h2>📋 分析概要</h2>
                         <p>本次分析共检测了 <strong>${uploadedFiles.length}</strong> 个文档，发现 <strong>${results.length}</strong> 处文本匹配。</p>
-                        <p>使用参数：相似度阈值 ${similarThreshold.value}，完全重复阈值 ${duplicateThreshold.value}，最小词数 ${minWords.value}</p>
+                        ${baseFile ? `<p>参考文件：<strong>${escapeHtml(baseFile.name)}</strong></p>` : ''}
+                        <p>已排除 <strong>${excludedParagraphs.length}</strong> 段来自参考文件的内容。</p>
+                        ${warningHtml}
+                        <p>使用参数：相似度阈值 ${similarThreshold.value}，完全重复阈值 ${duplicateThreshold.value}，最小词数 ${minWords.value}${baseThresholdDisplay}</p>
                     </div>
-                    
+
                     <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-number">${excludedParagraphs.length}</div>
+                            <div>已排除段落</div>
+                        </div>
                         <div class="stat-item">
                             <div class="stat-number">${duplicateCount}</div>
                             <div>完全重复</div>
@@ -1414,10 +1991,12 @@
                             <div>分析文档数</div>
                         </div>
                     </div>
-                    
+
+                    ${excludedHtml}
+
                     <h2>🔍 详细匹配结果</h2>
                     ${resultsHtml}
-                    
+
                     <div class="footer">
                         <p>报告生成工具：LocalDocDiff | ${new Date().toLocaleString()}</p>
                         <p><strong>隐私声明：</strong>此报告由完全在本地运行的LocalDocDiff生成，您的文档从未离开您的设备。</p>
@@ -1448,17 +2027,27 @@
         function saveAsTxt() {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const filename = `文档查重报告_${timestamp}.txt`;
-            
+
+            const baseThresholdDisplay = baseFile ? `, 参考排除阈值 ${baseThreshold.value}` : '';
+            const allExcluded = analysisData.statistics && analysisData.statistics.allValidParagraphsExcluded;
+
             let txtContent = `LocalDocDiff - 文档查重报告\n`;
             txtContent += `生成时间: ${new Date().toLocaleString()}\n`;
             txtContent += `分析文档数: ${uploadedFiles.length}\n`;
+            if (baseFile) {
+                txtContent += `参考文件: ${baseFile.name}\n`;
+            }
             txtContent += `发现匹配项: ${results.length}\n`;
-            txtContent += `使用参数: 相似度阈值 ${similarThreshold.value}, 完全重复阈值 ${duplicateThreshold.value}, 最小词数 ${minWords.value}\n\n`;
+            txtContent += `已排除段落数: ${excludedParagraphs.length}\n`;
+            txtContent += `使用参数: 相似度阈值 ${similarThreshold.value}, 完全重复阈值 ${duplicateThreshold.value}, 最小词数 ${minWords.value}${baseThresholdDisplay}\n\n`;
+            if (allExcluded) {
+                txtContent += `注意: 所有有效段落均被参考文件排除。\n\n`;
+            }
             txtContent += `隐私声明: 此报告由完全在本地运行的LocalDocDiff生成，您的文档从未离开您的设备。\n\n`;
             
             if (results.length > 0) {
                 const sortedResults = [...results].sort((a, b) => b.score - a.score);
-                
+
                 sortedResults.forEach((result, index) => {
                     txtContent += `----- 匹配项 ${index + 1} -----\n`;
                     txtContent += `类型: ${result.type} (相似度: ${result.score.toFixed(3)})\n`;
@@ -1471,7 +2060,19 @@
             } else {
                 txtContent += `未发现重复或相似的文本。\n`;
             }
-            
+
+            if (excludedParagraphs.length > 0) {
+                txtContent += `\n----- 已排除内容 -----\n`;
+                excludedParagraphs.forEach((item, index) => {
+                    txtContent += `排除项 ${index + 1}:\n`;
+                    txtContent += `来源文档: ${item.doc} (段落 ${item.para_idx})\n`;
+                    txtContent += `来源文本: ${item.raw_text}\n`;
+                    txtContent += `匹配参考段落: ${item.base_para_idx}\n`;
+                    txtContent += `参考文本: ${item.base_raw_text}\n`;
+                    txtContent += `相似度: ${item.score.toFixed(3)}\n\n`;
+                });
+            }
+
             const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1489,8 +2090,14 @@
             paragraphs = [];
             results = [];
             analysisData = {};
-            
+            baseFile = null;
+            baseParagraphs = [];
+            excludedParagraphs = [];
+
             fileList.innerHTML = '';
+            baseFileList.innerHTML = '';
+            updateBaseThresholdUI();
+            updateAnalyzeButtonState();
             analyzeBtn.disabled = true;
             progressSection.style.display = 'none';
             resultsSection.style.display = 'none';
