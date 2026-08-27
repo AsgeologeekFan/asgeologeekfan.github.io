@@ -5,7 +5,9 @@ date: 2026-08-27
 last_modified_at: 2026-08-27
 ---
 
-# 屏幕量角器 · 在地图上量取公路边坡走向与倾向(https://www.asgeologeekfan.top/posts/screen-protractor.html)
+# [屏幕量角器 · 在地图上量取公路边坡走向与倾向](https://www.asgeologeekfan.top/posts/screen-protractor.html)
+
+[点击下载](https://www.asgeologeekfan.top/project/ScreenProtractor.exe) (单文件 exe，免安装，Windows 7 / 10 / 11 64 位)
 
 > 一款悬浮在地图之上的轻量级屏幕量角器，单文件 exe、免安装，专为公路边坡 / 地质灾害野外调查场景设计。
 
