@@ -42,7 +42,8 @@ last_modified_at: 2026-08-27
 
 ## 三、界面与术语
 
-
+![控制面板](../assets/images/控制面板.png)
+![量角器圆盘](../assets/images/量角器圆盘.png)
 
 量角器圆盘各元素含义：
 
