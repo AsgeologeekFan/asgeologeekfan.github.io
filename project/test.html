@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>声谈 · Voice LLM Chat</title>
+<style>
+  :root{
+    --bg:#101010;
+    --panel:rgba(30,30,36,.92);
+    --panel-border:rgba(74,74,90,.4);
+    --text:#e0e0e0;
+    --text-2:#9a9aab;
+    --text-3:#6e6e6e;
+    --accent:#00aaff;
+    --accent-soft:rgba(0,170,255,.14);
+    --green:#c9efa2;
+    --danger:#ff6b6b;
+    --ease:cubic-bezier(.4,0,.2,1);
+    --radius:8px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Inter",-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#3a3a46;border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:#4a4a5a}
+
+  /* ---------- 顶部 ---------- */
+  header.site{
+    position:fixed;top:0;left:0;z-index:20;
+    padding:20px 24px;
+    display:flex;align-items:center;gap:12px;
+    text-shadow:1px 1px 5px rgba(0,0,0,.7);
+    user-select:none;
+  }
+  header.site .mark{width:26px;height:26px;flex:none}
+  header.site h1{font-size:14px;font-weight:600;letter-spacing:.04em}
+  header.site p{font-size:12px;color:var(--text-2);margin-top:2px}
+  header.site .tt{display:flex;flex-direction:column}
+
+  #settingsBtn{
+    position:fixed;top:20px;right:24px;z-index:30;
+    width:38px;height:38px;border-radius:var(--radius);
+    background:var(--panel);border:1px solid var(--panel-border);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    color:var(--text-2);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:color .25s var(--ease),border-color .25s var(--ease),transform .25s var(--ease);
+  }
+  #settingsBtn:hover{color:var(--accent);border-color:rgba(0,170,255,.45)}
+  #settingsBtn.open{color:var(--accent)}
+  #settingsBtn svg{width:18px;height:18px}
+  #settingsBtn .dot{
+    position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
+    background:var(--danger);border:2px solid var(--bg);display:none;
+  }
+  #settingsBtn.need-key .dot{display:block}
+
+  /* ---------- 设置面板 ---------- */
+  #panel{
+    position:fixed;top:70px;right:24px;z-index:25;
+    width:320px;max-width:calc(100vw - 48px);
+    max-height:calc(100vh - 100px);
+    overflow-y:auto;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:var(--radius);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    padding:18px;
+    opacity:0;transform:translateY(-8px);pointer-events:none;
+    transition:opacity .25s var(--ease),transform .25s var(--ease);
+  }
+  #panel.open{opacity:1;transform:translateY(0);pointer-events:auto}
+  #panel h2{font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:.12em;text-transform:uppercase;margin:0 0 12px}
+  #panel .group{margin-bottom:14px}
+  #panel label{display:block;font-size:11px;color:var(--text-2);margin-bottom:5px;font-family:ui-monospace,"SF Mono","Fira Code",Consolas,monospace}
+  #panel input[type=text],#panel input[type=password],#panel select,#panel textarea,#panel input[type=number]{
+    width:100%;background:rgba(16,16,16,.6);
+    border:1px solid var(--panel-border);border-radius:6px;
+    color:var(--text);font-size:12px;padding:8px 10px;
+    font-family:ui-monospace,"SF Mono","Fira Code",Consolas,monospace;
+    outline:none;transition:border-color .25s var(--ease);
+  }
+  #panel textarea{resize:vertical;min-height:56px;font-family:inherit;line-height:1.5}
+  #panel input:focus,#panel select:focus,#panel textarea:focus{border-color:rgba(0,170,255,.55)}
+  #panel .row{display:flex;gap:10px}
+  #panel .row>div{flex:1}
+  #panel input[type=range]{width:100%;accent-color:var(--accent);height:22px}
+  .switch-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .switch-row span{font-size:12px;color:var(--text)}
+  .switch{position:relative;width:36px;height:20px;flex:none;cursor:pointer}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch i{
+    position:absolute;inset:0;border-radius:20px;background:#2a2a33;
+    border:1px solid var(--panel-border);transition:background .25s var(--ease);
+  }
+  .switch i:before{
+    content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;
+    background:var(--text-2);transition:transform .25s var(--ease),background .25s var(--ease);
+  }
+  .switch input:checked+i{background:rgba(0,170,255,.3);border-color:rgba(0,170,255,.5)}
+  .switch input:checked+i:before{transform:translateX(16px);background:var(--accent)}
+  #panel .hint{font-size:11px;color:var(--text-3);line-height:1.6;border-top:1px solid var(--panel-border);padding-top:12px;margin-top:4px}
+  #panel .hint code{color:var(--accent);font-family:ui-monospace,Consolas,monospace}
+
+  /* ---------- 主舞台 ---------- */
+  main{height:100vh;height:100dvh;display:flex;flex-direction:column;max-width:760px;margin:0 auto;padding:0 20px}
+  .stage{
+    flex:none;display:flex;flex-direction:column;align-items:center;
+    padding-top:max(72px,9vh);
+  }
+  #orbWrap{position:relative;width:220px;height:220px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #orb{width:100%;height:100%;display:block}
+  #orbWrap .ring{
+    position:absolute;inset:0;border-radius:50%;pointer-events:none;
+    border:1px solid rgba(0,170,255,.0);
+  }
+  #stateLabel{
+    margin-top:6px;font-size:11px;letter-spacing:.22em;
+    font-family:ui-monospace,"SF Mono","Fira Code",Consolas,monospace;
+    color:var(--text-3);text-transform:uppercase;
+    transition:color .25s var(--ease);min-height:16px;
+  }
+  #stateLabel.listening{color:var(--accent)}
+  #stateLabel.speaking{color:var(--green)}
+  #stateLabel.thinking{color:var(--text-2)}
+
+  /* ---------- 对话区 ---------- */
+  #transcript{
+    flex:1;overflow-y:auto;margin-top:14px;padding:4px 2px 12px;
+    display:flex;flex-direction:column;gap:10px;
+    mask-image:linear-gradient(to bottom,transparent 0,#000 24px);
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 24px);
+  }
+  .msg{max-width:82%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;animation:rise .3s var(--ease)}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .msg.user{align-self:flex-end;background:var(--accent-soft);border:1px solid rgba(0,170,255,.28);color:#d8efff;border-bottom-right-radius:4px}
+  .msg.bot{align-self:flex-start;background:rgba(30,30,36,.75);border:1px solid var(--panel-border);border-bottom-left-radius:4px}
+  .msg.bot.error{border-color:rgba(255,107,107,.45);color:#ffc9c9}
+  .msg.ghost{opacity:.45;font-style:normal}
+  .msg .cursor{display:inline-block;width:7px;height:15px;background:var(--accent);vertical-align:-2px;margin-left:2px;animation:blink .8s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  #empty{
+    margin:auto;text-align:center;color:var(--text-3);font-size:13px;line-height:2.1;user-select:none;
+  }
+  #empty b{color:var(--text-2);font-weight:600}
+
+  /* ---------- 底部输入 ---------- */
+  #composer{
+    flex:none;display:flex;align-items:center;gap:8px;
+    padding:10px 0 calc(14px + env(safe-area-inset-bottom));
+  }
+  #textInput{
+    flex:1;height:42px;border-radius:var(--radius);
+    background:var(--panel);border:1px solid var(--panel-border);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    color:var(--text);font-size:14px;padding:0 14px;outline:none;
+    transition:border-color .25s var(--ease);
+    font-family:inherit;
+  }
+  #textInput:focus{border-color:rgba(0,170,255,.55)}
+  .cbtn{
+    height:42px;min-width:42px;padding:0 12px;border-radius:var(--radius);
+    background:var(--panel);border:1px solid var(--panel-border);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    color:var(--text-2);cursor:pointer;font-size:13px;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    transition:color .25s var(--ease),border-color .25s var(--ease);
+    font-family:inherit;flex:none;
+  }
+  .cbtn:hover{color:var(--text);border-color:rgba(255,255,255,.25)}
+  .cbtn svg{width:16px;height:16px}
+  #micBtn.active{color:var(--accent);border-color:rgba(0,170,255,.55);background:rgba(0,170,255,.1)}
+  #sendBtn{color:var(--accent)}
+  #sendBtn:disabled{color:var(--text-3);cursor:default}
+
+  @media (max-width:640px){
+    header.site p{display:none}
+    .stage{padding-top:64px}
+    #orbWrap{width:170px;height:170px}
+    #panel{top:64px;right:12px;width:calc(100vw - 24px)}
+    #settingsBtn{right:12px}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="#00aaff" stroke-width="2" stroke-linecap="round">
+    <line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="7" x2="8" y2="17"/>
+    <line x1="12" y1="4" x2="12" y2="20"/><line x1="16" y1="7" x2="16" y2="17"/>
+    <line x1="20" y1="10" x2="20" y2="14"/>
+  </svg>
+  <div class="tt">
+    <h1>声谈</h1>
+    <p>Voice LLM Chat · 自带 Key · 纯前端</p>
+  </div>
+</header>
+
+<button id="settingsBtn" class="need-key" title="设置" aria-label="设置">
+  <span class="dot"></span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</button>
+
+<aside id="panel" aria-label="设置面板">
+  <h2>模型接入</h2>
+  <div class="group">
+    <label>服务商预设</label>
+    <select id="preset">
+      <option value="openai">OpenAI</option>
+      <option value="deepseek">DeepSeek</option>
+      <option value="moonshot">Kimi（Moonshot）</option>
+      <option value="zhipu">智谱 GLM</option>
+      <option value="qwen">通义千问（兼容模式）</option>
+      <option value="custom" selected>自定义</option>
+    </select>
+  </div>
+  <div class="group">
+    <label>API Base URL</label>
+    <input type="text" id="baseUrl" placeholder="https://api.openai.com/v1" spellcheck="false">
+  </div>
+  <div class="group">
+    <label>API Key</label>
+    <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" spellcheck="false">
+  </div>
+  <div class="group">
+    <label>模型</label>
+    <input type="text" id="model" placeholder="gpt-4o-mini" spellcheck="false">
+  </div>
+  <div class="group">
+    <label>系统提示词（可选）</label>
+    <textarea id="sysPrompt" placeholder="你是一个简洁友好的语音助手，回答控制在三句话以内。"></textarea>
+  </div>
+  <h2 style="margin-top:18px">语音</h2>
+  <div class="group">
+    <label>朗读音色</label>
+    <select id="voiceSel"></select>
+  </div>
+  <div class="row">
+    <div class="group">
+      <label>语速 <span id="rateVal">1.0</span></label>
+      <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
+    </div>
+    <div class="group">
+      <label>识别语言</label>
+      <select id="recLang">
+        <option value="zh-CN" selected>中文</option>
+        <option value="en-US">English</option>
+      </select>
+    </div>
+  </div>
+  <div class="group switch-row">
+    <span>免提连续对话</span>
+    <label class="switch"><input type="checkbox" id="handsfree"><i></i></label>
+  </div>
+  <div class="group switch-row">
+    <span>回复自动朗读</span>
+    <label class="switch"><input type="checkbox" id="ttsOn" checked><i></i></label>
+  </div>
+  <p class="hint">
+    Key 仅保存在本机浏览器 <code>localStorage</code>，除你配置的服务商外不会发送给任何人。语音识别与朗读使用浏览器内置能力，不消耗 API 额度。建议使用 Chrome / Edge；部分服务商可能不允许浏览器跨域直连。
+  </p>
+</aside>
+
+<main>
+  <section class="stage">
+    <div id="orbWrap" title="点击开始 / 停止说话">
+      <canvas id="orb"></canvas>
+      <div class="ring"></div>
+    </div>
+    <div id="stateLabel">STANDBY · 点击光环说话</div>
+  </section>
+
+  <section id="transcript">
+    <div id="empty">
+      <b>先点右上角 ⚙ 填入 API Key</b><br>
+      然后点击光环，直接开口说话<br>
+      也可以先在下方输入文字试试
+    </div>
+  </section>
+
+  <form id="composer">
+    <input type="text" id="textInput" placeholder="输入文字，或点击光环语音输入…" autocomplete="off">
+    <button type="button" class="cbtn" id="micBtn" title="语音输入">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/>
+      </svg>
+    </button>
+    <button type="submit" class="cbtn" id="sendBtn" title="发送">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+    <button type="button" class="cbtn" id="clearBtn" title="清空对话">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+    </button>
+  </form>
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   声谈 · 纯前端语音大模型对话
+   语音识别：Web Speech API ｜ 朗读：speechSynthesis ｜ 模型：OpenAI 兼容接口
+   ============================================================ */
+
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("vlc_"+k); return v===null? d : JSON.parse(v);}catch(e){return d;} },
+  set(k, v){ try{ localStorage.setItem("vlc_"+k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- 设置 ---------- */
+const PRESETS = {
+  openai:   { base:"https://api.openai.com/v1",                          model:"gpt-4o-mini" },
+  deepseek: { base:"https://api.deepseek.com/v1",                        model:"deepseek-chat" },
+  moonshot: { base:"https://api.moonshot.cn/v1",                         model:"moonshot-v1-8k" },
+  zhipu:    { base:"https://open.bigmodel.cn/api/paas/v4",               model:"glm-4-flash" },
+  qwen:     { base:"https://dashscope.aliyuncs.com/compatible-mode/v1",  model:"qwen-turbo" },
+};
+const cfg = {
+  base:      store.get("base", ""),
+  key:       store.get("key", ""),
+  model:     store.get("model", ""),
+  sys:       store.get("sys", "你是一个简洁友好的中文语音助手，回答口语化，控制在三句话以内。"),
+  voiceURI:  store.get("voiceURI", ""),
+  rate:      store.get("rate", 1),
+  recLang:   store.get("recLang", "zh-CN"),
+  handsfree: store.get("handsfree", false),
+  ttsOn:     store.get("ttsOn", true),
+};
+$("#baseUrl").value  = cfg.base;
+$("#apiKey").value   = cfg.key;
+$("#model").value    = cfg.model;
+$("#sysPrompt").value= cfg.sys;
+$("#rate").value     = cfg.rate;
+$("#rateVal").textContent = Number(cfg.rate).toFixed(1);
+$("#recLang").value  = cfg.recLang;
+$("#handsfree").checked = cfg.handsfree;
+$("#ttsOn").checked  = cfg.ttsOn;
+
+function refreshKeyDot(){ $("#settingsBtn").classList.toggle("need-key", !$("#apiKey").value.trim()); }
+refreshKeyDot();
+
+$("#preset").addEventListener("change", e=>{
+  const p = PRESETS[e.target.value];
+  if(p){ $("#baseUrl").value = p.base; $("#model").value = p.model;
+    cfg.base = p.base; cfg.model = p.model; store.set("base",cfg.base); store.set("model",cfg.model); }
+});
+$("#baseUrl").addEventListener("input", e=>{ cfg.base=e.target.value.trim(); store.set("base",cfg.base); $("#preset").value="custom"; });
+$("#apiKey").addEventListener("input",  e=>{ cfg.key =e.target.value.trim(); store.set("key",cfg.key); refreshKeyDot(); });
+$("#model").addEventListener("input",   e=>{ cfg.model=e.target.value.trim(); store.set("model",cfg.model); $("#preset").value="custom"; });
+$("#sysPrompt").addEventListener("input",e=>{ cfg.sys=e.target.value; store.set("sys",cfg.sys); });
+$("#rate").addEventListener("input", e=>{ cfg.rate=parseFloat(e.target.value); $("#rateVal").textContent=cfg.rate.toFixed(1); store.set("rate",cfg.rate); });
+$("#recLang").addEventListener("change", e=>{ cfg.recLang=e.target.value; store.set("recLang",cfg.recLang); });
+$("#handsfree").addEventListener("change", e=>{ cfg.handsfree=e.target.checked; store.set("handsfree",cfg.handsfree); });
+$("#ttsOn").addEventListener("change", e=>{ cfg.ttsOn=e.target.checked; store.set("ttsOn",cfg.ttsOn); if(!cfg.ttsOn) speechSynthesis.cancel(); });
+
+$("#settingsBtn").addEventListener("click", ()=>{
+  const open = $("#panel").classList.toggle("open");
+  $("#settingsBtn").classList.toggle("open", open);
+});
+document.addEventListener("click", e=>{
+  if($("#panel").classList.contains("open")
+     && !$("#panel").contains(e.target) && !$("#settingsBtn").contains(e.target)){
+    $("#panel").classList.remove("open"); $("#settingsBtn").classList.remove("open");
+  }
+});
+
+/* ---------- 朗读音色 ---------- */
+function loadVoices(){
+  const vs = speechSynthesis.getVoices().filter(v=>/zh|cmn|中文/i.test(v.lang+v.name));
+  const all = vs.length? vs : speechSynthesis.getVoices();
+  const sel = $("#voiceSel"); sel.innerHTML = "";
+  all.forEach(v=>{
+    const o = document.createElement("option");
+    o.value = v.voiceURI; o.textContent = `${v.name}（${v.lang}）`;
+    sel.appendChild(o);
+  });
+  if(cfg.voiceURI) sel.value = cfg.voiceURI;
+}
+speechSynthesis.onvoiceschanged = loadVoices; loadVoices();
+$("#voiceSel").addEventListener("change", e=>{ cfg.voiceURI=e.target.value; store.set("voiceURI",cfg.voiceURI); });
+
+/* ---------- 状态机 ---------- */
+let state = "idle"; // idle | listening | thinking | speaking
+const stateLabel = $("#stateLabel");
+const STATE_TEXT = {
+  idle:      ["STANDBY · 点击光环说话", ""],
+  listening: ["LISTENING · 正在聆听…", "listening"],
+  thinking:  ["THINKING · 等待模型回复", "thinking"],
+  speaking:  ["SPEAKING · 正在播报", "speaking"],
+};
+function setState(s){
+  state = s;
+  const [txt, cls] = STATE_TEXT[s];
+  stateLabel.textContent = txt;
+  stateLabel.className = cls;
+  $("#micBtn").classList.toggle("active", s==="listening");
+}
+
+/* ---------- 光环可视化（Canvas） ---------- */
+const orb = $("#orb"), octx = orb.getContext("2d");
+let OW=0, OH=0, DPR=1;
+function resizeOrb(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  const r = $("#orbWrap").getBoundingClientRect();
+  OW = r.width; OH = r.height;
+  orb.width = OW*DPR; orb.height = OH*DPR;
+  octx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize", resizeOrb); resizeOrb();
+
+/* 麦克风电平 */
+let audioCtx=null, analyser=null, micData=null, micLevel=0;
+async function ensureMic(){
+  if(analyser) return true;
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const src = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser);
+    micData = new Uint8Array(analyser.fftSize);
+    return true;
+  }catch(e){ return false; }
+}
+function readMicLevel(){
+  if(!analyser) return 0;
+  analyser.getByteTimeDomainData(micData);
+  let sum=0;
+  for(let i=0;i<micData.length;i++){ const v=(micData[i]-128)/128; sum+=v*v; }
+  const rms = Math.sqrt(sum/micData.length);
+  micLevel += (Math.min(1, rms*3.2) - micLevel)*0.25;
+  return micLevel;
+}
+
+/* 颜色随状态渐变 */
+const STATE_COLOR = {
+  idle:      [110,110,123],
+  listening: [0,170,255],
+  thinking:  [224,224,224],
+  speaking:  [201,239,162],
+};
+let curColor = [...STATE_COLOR.idle];
+function lerpColor(){
+  const t = STATE_COLOR[state] || STATE_COLOR.idle;
+  for(let i=0;i<3;i++) curColor[i] += (t[i]-curColor[i])*0.08;
+  return `rgb(${curColor[0]|0},${curColor[1]|0},${curColor[2]|0})`;
+}
+
+let T = 0, amp = 0.05;
+function targetAmp(){
+  switch(state){
+    case "listening": return 0.06 + readMicLevel()*0.5;
+    case "thinking":  return 0.07 + 0.03*Math.sin(T*9);
+    case "speaking":  return 0.14 + 0.11*(0.5+0.5*Math.sin(T*6.3))*(0.5+0.5*Math.sin(T*2.7+1.3));
+    default:          return 0.045 + 0.018*Math.sin(T*1.2);
+  }
+}
+function drawOrb(){
+  T += 0.016;
+  amp += (targetAmp()-amp)*0.12;
+  const col = lerpColor();
+  octx.clearRect(0,0,OW,OH);
+  const cx=OW/2, cy=OH/2, R=Math.min(OW,OH)*0.30;
+
+  /* 内辉光 */
+  const g = octx.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.5);
+  const a = state==="idle"? 0.05 : 0.10+amp*0.5;
+  g.addColorStop(0, `rgba(${curColor[0]|0},${curColor[1]|0},${curColor[2]|0},${a})`);
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  octx.fillStyle = g;
+  octx.fillRect(0,0,OW,OH);
+
+  /* 三层波形环 */
+  for(let layer=0; layer<3; layer++){
+    const phase = layer*2.1, spd = 1.1+layer*0.55, lw = 1.6-layer*0.4;
+    const alpha = [0.9,0.45,0.2][layer];
+    octx.beginPath();
+    for(let i=0;i<=140;i++){
+      const ang = i/140*Math.PI*2;
+      const w = Math.sin(ang*3+T*spd+phase)*0.55
+              + Math.sin(ang*5-T*spd*1.6+phase*2)*0.3
+              + Math.sin(ang*8+T*spd*0.7)*0.15;
+      const r = R*(1 + amp*w);
+      const x = cx+Math.cos(ang)*r, y = cy+Math.sin(ang)*r;
+      i===0? octx.moveTo(x,y) : octx.lineTo(x,y);
+    }
+    octx.closePath();
+    octx.strokeStyle = col;
+    octx.globalAlpha = alpha;
+    octx.lineWidth = lw;
+    octx.shadowColor = col;
+    octx.shadowBlur = state==="idle"? 4 : 14;
+    octx.stroke();
+    octx.shadowBlur = 0;
+    octx.globalAlpha = 1;
+  }
+  requestAnimationFrame(drawOrb);
+}
+drawOrb();
+
+/* ---------- 对话记录 ---------- */
+const transcript = $("#transcript");
+const history = []; // {role, content}
+function addMsg(role, text, opts={}){
+  $("#empty")?.remove();
+  const d = document.createElement("div");
+  d.className = "msg " + (role==="user"?"user":"bot") + (opts.ghost?" ghost":"") + (opts.error?" error":"");
+  d.textContent = text;
+  transcript.appendChild(d);
+  transcript.scrollTop = transcript.scrollHeight;
+  return d;
+}
+function scrollBottom(){ transcript.scrollTop = transcript.scrollHeight; }
+
+/* ---------- 语音识别 ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog=null, recognizing=false, finalText="", ghostEl=null, manualStop=false;
+
+function setupRecog(){
+  recog = new SR();
+  recog.lang = cfg.recLang;
+  recog.interimResults = true;
+  recog.continuous = false;
+  recog.maxAlternatives = 1;
+
+  recog.onresult = e=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    const show = (finalText+interim).trim();
+    if(show){
+      if(!ghostEl) ghostEl = addMsg("user", show, {ghost:true});
+      else ghostEl.textContent = show;
+      scrollBottom();
+    }
+  };
+  recog.onerror = e=>{
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){
+      addMsg("assistant","无法访问麦克风：请在浏览器地址栏允许麦克风权限，并确认页面运行在 HTTPS 或 localhost 环境。",{error:true});
+    }else if(e.error!=="aborted"&&e.error!=="no-speech"){
+      addMsg("assistant","语音识别出错："+e.error,{error:true});
+    }
+  };
+  recog.onend = ()=>{
+    recognizing=false;
+    const text = finalText.trim();
+    if(ghostEl){ ghostEl.remove(); ghostEl=null; }
+    if(text){
+      sendMessage(text);
+    }else if(state==="listening"){
+      setState("idle");
+      if(cfg.handsfree && !manualStop){
+        // 免提模式下空识别则继续听
+        setTimeout(()=>{ if(state==="idle"&&cfg.handsfree) startListening(); }, 350);
+      }
+    }
+  };
+}
+async function startListening(){
+  if(!SR){
+    addMsg("assistant","当前浏览器不支持语音识别，请使用 Chrome 或 Edge（Safari 支持有限），仍可用下方文字输入。",{error:true});
+    return;
+  }
+  if(!cfg.key || !cfg.base || !cfg.model){
+    addMsg("assistant","请先在右上角设置中填写 API Base URL、API Key 和模型名称。",{error:true});
+    $("#panel").classList.add("open"); $("#settingsBtn").classList.add("open");
+    return;
+  }
+  speechSynthesis.cancel();
+  await ensureMic(); // 可视化用，失败不阻断识别
+  if(!recog) setupRecog();
+  recog.lang = cfg.recLang;
+  finalText=""; manualStop=false;
+  try{ recog.start(); recognizing=true; setState("listening"); }catch(e){}
+}
+function stopListening(){
+  if(recognizing){ manualStop=true; try{recog.stop();}catch(e){} }
+}
+
+function toggleVoice(){
+  if(state==="speaking"){ speechSynthesis.cancel(); return; }
+  if(state==="thinking"){ return; }
+  recognizing ? stopListening() : startListening();
+}
+$("#orbWrap").addEventListener("click", toggleVoice);
+$("#micBtn").addEventListener("click", toggleVoice);
+
+/* ---------- 大模型调用（流式） ---------- */
+let abortCtrl=null;
+async function sendMessage(text){
+  addMsg("user", text);
+  history.push({role:"user", content:text});
+  setState("thinking");
+
+  const botEl = addMsg("assistant","");
+  const cursor = document.createElement("span"); cursor.className="cursor";
+  botEl.appendChild(cursor);
+
+  const messages = [];
+  if(cfg.sys.trim()) messages.push({role:"system", content:cfg.sys.trim()});
+  messages.push(...history.slice(-20));
+
+  const url = cfg.base.replace(/\/+$/,"") + "/chat/completions";
+  abortCtrl = new AbortController();
+  let full="";
+  try{
+    const resp = await fetch(url,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+cfg.key },
+      body: JSON.stringify({ model:cfg.model, messages, stream:true, temperature:0.7 }),
+      signal: abortCtrl.signal,
+    });
+    if(!resp.ok){
+      let detail = resp.status+" "+resp.statusText;
+      try{ const j = await resp.json(); detail += " · " + (j.error?.message||JSON.stringify(j)); }catch(e){}
+      throw new Error(detail);
+    }
+    const ctype = resp.headers.get("content-type")||"";
+    if(ctype.includes("text/event-stream") && resp.body){
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf="";
+      while(true){
+        const {done, value} = await reader.read();
+        if(done) break;
+        buf += dec.decode(value,{stream:true});
+        const lines = buf.split("\n");
+        buf = lines.pop();
+        for(const line of lines){
+          const t = line.trim();
+          if(!t.startsWith("data:")) continue;
+          const payload = t.slice(5).trim();
+          if(payload==="[DONE]") break;
+          try{
+            const j = JSON.parse(payload);
+            const delta = j.choices?.[0]?.delta?.content || j.choices?.[0]?.message?.content || "";
+            if(delta){ full+=delta; botEl.textContent=full; botEl.appendChild(cursor); scrollBottom(); }
+          }catch(e){}
+        }
+      }
+    }else{
+      const j = await resp.json();
+      full = j.choices?.[0]?.message?.content || "";
+      botEl.textContent = full;
+    }
+    if(!full) throw new Error("返回内容为空");
+    history.push({role:"assistant", content:full});
+    if(cfg.ttsOn) speak(full); else setState("idle");
+  }catch(err){
+    botEl.remove();
+    if(err.name!=="AbortError"){
+      addMsg("assistant","调用失败："+err.message+"。请检查 Key、模型名与 Base URL，或确认该服务商允许浏览器跨域访问。",{error:true});
+    }
+    history.push({role:"assistant", content:"（调用失败）"});
+    history.pop(); // 失败回复不进入上下文
+    setState("idle");
+  }
+}
+
+/* ---------- 语音播报 ---------- */
+function cleanForSpeech(t){
+  return t.replace(/[#*>`\-•\[\]()`_|~]/g," ").replace(/https?:\/\/\S+/g,"链接").replace(/\s+/g," ").trim();
+}
+function speak(text){
+  const u = new SpeechSynthesisUtterance(cleanForSpeech(text));
+  const v = speechSynthesis.getVoices().find(x=>x.voiceURI===cfg.voiceURI);
+  if(v) u.voice = v;
+  u.lang = v? v.lang : (cfg.recLang==="en-US"?"en-US":"zh-CN");
+  u.rate = cfg.rate;
+  u.onstart = ()=> setState("speaking");
+  u.onend = u.onerror = ()=>{
+    if(state==="speaking") setState("idle");
+    if(cfg.handsfree && state==="idle") setTimeout(()=>{ if(state==="idle"&&cfg.handsfree) startListening(); }, 300);
+  };
+  speechSynthesis.speak(u);
+}
+
+/* ---------- 文字输入 & 清空 ---------- */
+$("#composer").addEventListener("submit", e=>{
+  e.preventDefault();
+  const t = $("#textInput").value.trim();
+  if(!t) return;
+  if(state==="thinking") return;
+  if(state==="speaking") speechSynthesis.cancel();
+  if(recognizing) stopListening();
+  $("#textInput").value="";
+  if(!cfg.key || !cfg.base || !cfg.model){
+    addMsg("assistant","请先在右上角设置中填写 API Base URL、API Key 和模型名称。",{error:true});
+    $("#panel").classList.add("open"); $("#settingsBtn").classList.add("open");
+    return;
+  }
+  sendMessage(t);
+});
+$("#clearBtn").addEventListener("click", ()=>{
+  speechSynthesis.cancel();
+  if(recognizing) stopListening();
+  abortCtrl?.abort();
+  history.length=0;
+  transcript.innerHTML = '<div id="empty"><b>对话已清空</b><br>点击光环，重新开始</div>';
+  setState("idle");
+});
+
+/* ---------- 键盘快捷键 ---------- */
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape"){ speechSynthesis.cancel(); if(recognizing) stopListening(); }
+  if(e.key===" " && document.activeElement!==$("#textInput")
+     && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)){
+    e.preventDefault(); toggleVoice();
+  }
+});
+
+setState("idle");
+</script>
+</body>
+</html>
