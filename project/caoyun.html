@@ -1,0 +1,2908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>漕运指挥官 · 灵宠养成记（语音版） | 中国大运河博物馆</title>
+<style>
+/* ============================================================
+   视觉设计规范（亮色 · 中国水文化）
+   ============================================================ */
+:root{
+  --bg:#F7FBFC; --bg-soft:#EAF4F8;
+  --ink:#14313D; --ink-2:#4A6A78;
+  --canal:#2E86C1; --canal-deep:#1B5E8A; --canal-light:#BEE3F0;
+  --jade:#16A085; --gold:#C8963E; --vermilion:#C0392B; --warn:#D68910;
+  --r:16px; --shadow:0 6px 24px rgba(20,49,61,.08);
+  --maxw:1080px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:
+    repeating-linear-gradient(135deg, rgba(46,134,193,.035) 0 2px, transparent 2px 22px),
+    linear-gradient(180deg,#F7FBFC 0%,#EAF4F8 55%,#E2F1F6 100%);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+button{font-family:inherit}
+h1,h2,h3,h4{margin:0;line-height:1.3}
+p{margin:0 0 8px}
+:focus-visible{outline:3px solid var(--vermilion);outline-offset:2px;border-radius:6px}
+
+/* ---------- 滚动分屏容器 ---------- */
+#scroller{
+  height:100vh;height:100dvh;overflow-y:scroll;overflow-x:hidden;
+  scroll-snap-type:y mandatory;scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+.screen{
+  position:relative;
+  min-height:100vh;min-height:100dvh;height:100vh;height:100dvh;
+  scroll-snap-align:start;scroll-snap-stop:always;
+  padding:78px 16px 74px;
+  display:flex;flex-direction:column;align-items:center;
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease,transform .5s ease;
+}
+.screen.visible{opacity:1;transform:none}
+.screen-inner{width:100%;max-width:var(--maxw);margin:0 auto}
+
+/* ---------- 通用卡片/按钮 ---------- */
+.card{
+  background:#fff;border:1px solid #DCEBF2;border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px 18px;
+}
+.panel{background:rgba(255,255,255,.86);border:1px solid #DCEBF2;border-radius:var(--r);box-shadow:var(--shadow)}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;justify-content:center;
+  background:var(--canal);color:#fff;border:none;border-radius:999px;
+  padding:11px 20px;font-size:16px;font-weight:600;cursor:pointer;
+  transition:transform .15s ease,box-shadow .2s ease,background .2s ease;
+  box-shadow:0 4px 14px rgba(46,134,193,.28);
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(46,134,193,.36)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:#fff;color:var(--canal-deep);border:1.5px solid var(--canal-light);box-shadow:none}
+.btn.ghost:hover{background:var(--bg-soft)}
+.btn.jade{background:var(--jade);box-shadow:0 4px 14px rgba(22,160,133,.3)}
+.btn.gold{background:var(--gold);box-shadow:0 4px 14px rgba(200,150,62,.3)}
+.btn.verm{background:var(--vermilion);box-shadow:0 4px 14px rgba(192,57,43,.28)}
+.btn.sm{padding:8px 14px;font-size:14px}
+.btn.block{width:100%}
+
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;background:var(--canal-light);color:var(--canal-deep)}
+.tag.gold{background:#F6E7C9;color:#8A6420}
+.tag.jade{background:#CFF0E8;color:#0E7A66}
+.tag.verm{background:#F7DAD5;color:#8E2A1E}
+
+.muted{color:var(--ink-2)}
+.center{text-align:center}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.grow{flex:1 1 240px}
+
+/* ============================================================
+   顶部常驻 HUD
+   ============================================================ */
+.hud{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;background:rgba(255,255,255,.9);
+  backdrop-filter:blur(8px);border-bottom:1px solid #DCEBF2;
+  box-shadow:0 2px 12px rgba(20,49,61,.06);
+}
+.hud-left{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.commander-badge{width:42px;height:42px;flex:none}
+.commander-meta{line-height:1.15}
+.commander-meta .t1{font-size:12px;color:var(--ink-2)}
+.commander-meta .t2{font-size:15px;font-weight:700;color:var(--canal-deep)}
+.hud-center{display:flex;align-items:center;gap:10px;flex:1 1 auto;min-width:0}
+.pet-mini{width:40px;height:40px;flex:none}
+.energy-wrap{flex:1 1 auto;min-width:80px}
+.energy-bar{height:12px;border-radius:999px;background:#E3EFF5;overflow:hidden;border:1px solid #D3E6EF}
+#energyFill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#7FD3C0,var(--jade));transition:width .6s cubic-bezier(.3,1.4,.6,1)}
+.energy-text{font-size:12px;color:var(--ink-2);white-space:nowrap}
+.hud-right{display:flex;gap:12px;flex:0 0 auto}
+.stat{text-align:center;line-height:1.1}
+.stat b{display:block;font-size:15px;color:var(--canal-deep)}
+.stat small{font-size:11px;color:var(--ink-2)}
+
+/* ============================================================
+   右侧章节进度导航
+   ============================================================ */
+.chapter-nav{
+  position:fixed;right:8px;top:50%;transform:translateY(-50%);z-index:55;
+  display:flex;flex-direction:column;gap:4px;
+  background:rgba(255,255,255,.82);backdrop-filter:blur(6px);
+  border:1px solid #DCEBF2;border-radius:14px;padding:8px 6px;
+  box-shadow:var(--shadow);
+}
+.nav-item{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:5px 6px;border-radius:9px;color:var(--ink-2);font-size:12px;transition:background .2s}
+.nav-item .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--canal-light);background:#fff;flex:none;transition:.25s}
+.nav-item .nl{max-width:0;overflow:hidden;white-space:nowrap;transition:max-width .3s ease,opacity .3s;opacity:0}
+.nav-item.active{background:var(--bg-soft);color:var(--canal-deep);font-weight:700}
+.nav-item.active .dot{background:var(--vermilion);border-color:var(--vermilion);transform:scale(1.25)}
+.chapter-nav:hover .nav-item .nl,.nav-item:focus-visible .nl{max-width:120px;opacity:1}
+.nav-item:hover .nl{max-width:120px;opacity:1}
+
+/* ============================================================
+   安澜悬浮形象
+   ============================================================ */
+.anlan-fab{
+  position:fixed;right:14px;bottom:16px;z-index:58;
+  width:76px;height:76px;border:none;background:none;cursor:pointer;padding:0;
+  filter:drop-shadow(0 6px 12px rgba(20,49,61,.18));
+  animation:bob 3.4s ease-in-out infinite;
+}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.anlan-tip{
+  position:fixed;right:98px;bottom:22px;z-index:59;max-width:250px;
+  background:#fff;border:1px solid var(--canal-light);border-radius:14px;
+  padding:10px 13px;box-shadow:var(--shadow);font-size:13.5px;color:var(--ink);
+  opacity:0;pointer-events:none;transform:translateY(8px);transition:.28s;
+}
+.anlan-tip.show{opacity:1;transform:none}
+
+/* ============================================================
+   继续下一屏按钮
+   ============================================================ */
+.next-btn{
+  position:absolute;right:14px;bottom:14px;z-index:20;
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.94);color:var(--canal-deep);
+  border:1.5px solid var(--canal-light);border-radius:999px;
+  padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:var(--shadow);transition:.2s;
+}
+.next-btn:hover{background:var(--canal);color:#fff;border-color:var(--canal)}
+.next-btn:disabled{opacity:0;pointer-events:none}
+
+/* ============================================================
+   文物屏版式
+   ============================================================ */
+.art-head{display:grid;grid-template-columns:280px 1fr;gap:18px;align-items:start}
+@media(max-width:720px){.art-head{grid-template-columns:1fr}}
+.art-visual{background:linear-gradient(160deg,#fff, #EAF4F8);border:1px solid #DCEBF2;border-radius:var(--r);padding:10px;box-shadow:var(--shadow);text-align:center}
+.art-svg{width:100%;height:auto;max-height:210px;display:block;margin:0 auto}
+.art-name{font-size:22px;font-weight:800;color:var(--canal-deep);margin-bottom:4px}
+.art-meta{font-size:13.5px;color:var(--ink-2);margin-bottom:8px}
+.anlan-say{position:relative;background:#F0F9FC;border:1px solid var(--canal-light);border-radius:14px;padding:14px 16px 14px 16px;margin:14px 0}
+.anlan-say .who{font-weight:700;color:var(--canal-deep);font-size:14px;margin-bottom:4px}
+.anlan-say .who span{font-weight:400;color:var(--ink-2);font-size:12px}
+.facts-toggle{margin:8px 0}
+.facts{display:none;margin-top:10px}
+.facts.open{display:block}
+.facts li{margin-bottom:7px;font-size:14.5px;color:var(--ink-2)}
+.facts ul{padding-left:20px;margin:8px 0 0}
+
+.task-card{background:#fff;border:1.5px solid #D9EAF2;border-radius:var(--r);padding:14px 16px;margin-top:14px;box-shadow:var(--shadow)}
+.task-title{font-weight:800;color:var(--gold);font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.part{border-top:1px dashed #DCEBF2;padding-top:12px;margin-top:12px}
+.part:first-child{border-top:none;margin-top:0;padding-top:0}
+.part-prompt{font-weight:600;margin-bottom:8px;font-size:15px}
+.opt{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:#FBFeFF;border:1.5px solid #DCEBF2;border-radius:12px;
+  padding:10px 13px;margin-bottom:8px;cursor:pointer;font-size:14.5px;color:var(--ink);
+  transition:.18s;
+}
+.opt:hover{border-color:var(--canal);background:#F2FAFD}
+.opt .mark{width:20px;height:20px;border-radius:6px;border:2px solid #BCD8E6;flex:none;display:grid;place-items:center;font-size:13px;color:#fff;transition:.18s}
+.opt.sel{border-color:var(--canal);background:#EAF4F8;box-shadow:0 0 0 2px rgba(46,134,193,.12)}
+.opt.sel .mark{background:var(--canal);border-color:var(--canal)}
+.opt.ok{border-color:var(--jade);background:#E9F8F4}
+.opt.ok .mark{background:var(--jade);border-color:var(--jade)}
+.opt.no{border-color:var(--gold);background:#FBF4E7}
+.opt.no .mark{background:var(--gold);border-color:var(--gold)}
+.opt:disabled{cursor:default}
+.explain{font-size:13.5px;color:var(--ink-2);background:var(--bg-soft);border-radius:10px;padding:9px 12px;margin-top:8px;display:none}
+.explain.show{display:block}
+.seq{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;min-height:34px;background:#F7FBFC;border:1.5px dashed #CFE3EC;border-radius:12px;padding:8px}
+.seq .chip{background:var(--canal);color:#fff;border-radius:999px;padding:5px 12px;font-size:13.5px;cursor:pointer}
+.pair-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:8px}
+.pair-row select{font-family:inherit;font-size:14px;padding:8px 10px;border-radius:10px;border:1.5px solid #DCEBF2;background:#fff;color:var(--ink);max-width:60%}
+.result-banner{border-radius:12px;padding:10px 14px;font-weight:700;display:none;margin-top:8px}
+.result-banner.show{display:block}
+.result-banner.good{background:#E9F8F4;color:#0E7A66;border:1px solid #A9E2D6}
+.result-banner.warn{background:#FBF4E7;color:#8A6420;border:1px solid #E8D2A4}
+
+/* ============================================================
+   启程屏
+   ============================================================ */
+.boot-title{font-size:clamp(26px,6vw,42px);font-weight:900;color:var(--canal-deep);letter-spacing:1px}
+.boot-sub{color:var(--ink-2);margin-top:6px}
+.form-row{margin:12px 0}
+.form-row label{display:block;font-weight:700;margin-bottom:6px;font-size:15px}
+input[type=text]{
+  width:100%;font-family:inherit;font-size:16px;padding:11px 14px;border-radius:12px;
+  border:1.5px solid #CFE3EC;background:#fff;color:var(--ink);
+}
+input[type=text]:focus{border-color:var(--canal);outline:none;box-shadow:0 0 0 3px rgba(46,134,193,.15)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}}
+.form-panel{max-width:680px;margin:0 auto;width:100%}
+.form-choices{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:560px){.form-choices{grid-template-columns:1fr}}
+.choice-card{background:#fff;border:2px solid #DCEBF2;border-radius:var(--r);padding:10px;cursor:pointer;text-align:center;transition:.2s}
+.choice-card:hover{border-color:var(--canal);transform:translateY(-2px)}
+.choice-card.sel{border-color:var(--vermilion);box-shadow:0 0 0 3px rgba(192,57,43,.12)}
+.choice-card .nm{font-weight:700;font-size:15px;margin-top:4px;color:var(--canal-deep)}
+.choice-card .ds{font-size:12.5px;color:var(--ink-2)}
+.choice-card svg{width:100%;height:88px}
+
+/* ============================================================
+   章节引子屏
+   ============================================================ */
+.chapter-hero{text-align:center;max-width:760px;margin:0 auto;width:100%}
+.chapter-no{font-size:14px;letter-spacing:4px;color:var(--gold);font-weight:700}
+.chapter-name{font-size:clamp(28px,7vw,46px);font-weight:900;color:var(--canal-deep);margin:6px 0}
+.chapter-part{font-size:15px;color:var(--ink-2);letter-spacing:2px}
+.intro-bubble{background:#fff;border:1.5px solid var(--canal-light);border-radius:18px;padding:18px 20px;margin:18px auto;box-shadow:var(--shadow);text-align:left}
+.energy-pill{display:inline-flex;align-items:center;gap:8px;background:#E9F8F4;color:#0E7A66;border-radius:999px;padding:8px 18px;font-weight:800;font-size:17px;border:1px solid #A9E2D6}
+.chapter-visual{margin:10px auto;max-width:460px}
+
+/* ============================================================
+   灵宠区
+   ============================================================ */
+.pet-stage{display:flex;align-items:center;gap:16px;justify-content:center;flex-wrap:wrap}
+.pet-big{width:170px;height:170px;transition:transform .5s cubic-bezier(.3,1.6,.6,1)}
+.pet-big.pop{transform:scale(1.28)}
+
+/* ============================================================
+   提问屏
+   ============================================================ */
+.q-card{margin-bottom:16px}
+.q-bubble{display:flex;gap:12px;align-items:flex-start}
+.q-bubble .pet{width:58px;height:58px;flex:none}
+.q-bubble .txt{background:#F0F9FC;border:1px solid var(--canal-light);border-radius:14px;padding:12px 14px;font-size:15px}
+.art-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0}
+@media(max-width:720px){.art-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:420px){.art-grid{grid-template-columns:repeat(2,1fr)}}
+.art-chip{background:#fff;border:1.5px solid #DCEBF2;border-radius:12px;padding:6px;cursor:pointer;text-align:center;transition:.18s}
+.art-chip:hover{border-color:var(--canal);transform:translateY(-2px)}
+.art-chip.sel{border-color:var(--vermilion);box-shadow:0 0 0 2px rgba(192,57,43,.14)}
+.art-chip svg{width:100%;height:52px}
+.art-chip .nm{font-size:11.5px;color:var(--ink);line-height:1.2}
+.rec-box{background:#F7FBFC;border:1.5px dashed #CFE3EC;border-radius:12px;padding:12px;margin-top:10px}
+.rec-timer{font-size:26px;font-weight:800;color:var(--canal-deep);font-variant-numeric:tabular-nums}
+.meter{height:12px;border-radius:999px;background:#E3EFF5;overflow:hidden;margin:8px 0;border:1px solid #D3E6EF}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7FD3C0,var(--jade));transition:width .1s linear}
+.note{font-size:13px;color:var(--ink-2);background:var(--bg-soft);border-radius:10px;padding:8px 11px;margin-top:8px}
+.rec-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--vermilion);margin-right:6px;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+textarea{width:100%;font-family:inherit;font-size:15px;padding:10px 12px;border-radius:12px;border:1.5px solid #CFE3EC;background:#fff;color:var(--ink);min-height:88px;resize:vertical}
+textarea:focus{border-color:var(--canal);outline:none;box-shadow:0 0 0 3px rgba(46,134,193,.15)}
+.answer-echo{background:#E9F8F4;border:1px solid #A9E2D6;border-radius:12px;padding:10px 13px;margin-top:10px;font-size:14px;color:#0E7A66}
+
+/* ============================================================
+   诞生屏
+   ============================================================ */
+.birth-hero{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center}
+@media(max-width:720px){.birth-hero{grid-template-columns:1fr}}
+.feat-list li{margin-bottom:6px;font-size:14.5px}
+.name-chip{display:inline-block;background:#fff;border:1.5px solid var(--canal-light);border-radius:999px;padding:7px 14px;margin:4px 6px 4px 0;font-weight:700;color:var(--canal-deep);cursor:pointer;transition:.18s}
+.name-chip:hover{border-color:var(--canal);background:var(--bg-soft)}
+.name-chip.sel{background:var(--canal);color:#fff;border-color:var(--canal)}
+.rec-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:860px){.rec-cards{grid-template-columns:1fr}}
+.rec-card{background:#fff;border:1.5px solid #DCEBF2;border-radius:var(--r);padding:13px;cursor:pointer;transition:.2s;box-shadow:var(--shadow)}
+.rec-card:hover{transform:translateY(-3px);border-color:var(--canal)}
+.rec-card.sel{border-color:var(--vermilion);box-shadow:0 0 0 3px rgba(192,57,43,.12)}
+.rec-card h4{color:var(--canal-deep);font-size:16px;margin-bottom:6px}
+.rec-card .why{font-size:13px;color:var(--ink-2);background:var(--bg-soft);border-radius:9px;padding:7px 9px;margin:6px 0}
+.rec-card ol{margin:6px 0 0;padding-left:18px;font-size:13.5px}
+.rec-card .time{font-size:12.5px;color:var(--gold);font-weight:700;margin-top:6px}
+
+/* 见面记录卡 */
+.meet-card{
+  background:linear-gradient(160deg,#fff,#F3FAFD);
+  border:3px double var(--canal);border-radius:18px;padding:20px;position:relative;
+  box-shadow:var(--shadow);max-width:640px;margin:0 auto;overflow:hidden;
+}
+.meet-card::before,.meet-card::after{
+  content:"";position:absolute;left:0;right:0;height:14px;
+  background:repeating-linear-gradient(90deg,var(--canal-light) 0 12px,transparent 12px 22px);opacity:.5;
+}
+.meet-card::before{top:4px}.meet-card::after{bottom:4px}
+.meet-card h3{text-align:center;color:var(--canal-deep);font-size:22px;letter-spacing:2px}
+.seal{position:absolute;right:16px;top:14px;width:66px;height:66px}
+.meet-grid{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:14.5px;margin:14px 0}
+.meet-grid .k{color:var(--ink-2)}
+.meet-grid .v{font-weight:700;color:var(--canal-deep)}
+.lines{border-top:1px dashed #BCD8E6;margin-top:10px;padding-top:10px;color:var(--ink-2);font-size:14px}
+.line-blank{border-bottom:1px dashed #B7D3E1;height:26px;margin-bottom:8px}
+
+/* ============================================================
+   报告屏
+   ============================================================ */
+.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:720px){.report-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.report-grid{grid-template-columns:1fr}}
+.big-stat{text-align:center}
+.big-stat b{display:block;font-size:26px;color:var(--canal-deep);font-variant-numeric:tabular-nums}
+.radar-wrap{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center}
+@media(max-width:720px){.radar-wrap{grid-template-columns:1fr}}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:720px){.badge-grid{grid-template-columns:repeat(2,1fr)}}
+.badge{background:#fff;border:1.5px solid #DCEBF2;border-radius:14px;padding:10px;text-align:center;opacity:.52;filter:grayscale(1)}
+.badge.on{opacity:1;filter:none;border-color:var(--gold);box-shadow:0 4px 16px rgba(200,150,62,.18)}
+.badge .ico{font-size:26px}
+.badge .bt{font-weight:700;font-size:13.5px;margin-top:2px;color:var(--canal-deep)}
+.badge .bh{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+.praise{background:#fff;border-left:5px solid var(--jade);border-radius:12px;padding:11px 14px;margin-bottom:10px;font-size:14.5px;box-shadow:var(--shadow)}
+.praise.warm{border-left-color:var(--gold)}
+.section-title{font-size:20px;font-weight:800;color:var(--canal-deep);margin:20px 0 10px;display:flex;align-items:center;gap:10px}
+.section-title::before{content:"";width:8px;height:22px;border-radius:4px;background:linear-gradient(180deg,var(--canal),var(--jade))}
+.kp-list li{margin-bottom:6px;font-size:14px}
+.kp-list b{color:var(--canal-deep)}
+
+.toast{
+  position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;
+  z-index:200;opacity:0;pointer-events:none;transition:.3s;max-width:88vw;text-align:center;
+}
+.toast.show{opacity:.95;transform:translateX(-50%) translateY(0)}
+
+.pop-particle{position:fixed;pointer-events:none;z-index:150;font-size:20px;animation:floatUp 1.3s ease-out forwards}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-90px) scale(1.5)}}
+
+.levelup-overlay{
+  position:fixed;inset:0;z-index:180;display:none;place-items:center;
+  background:radial-gradient(circle at 50% 45%,rgba(247,251,252,.55),rgba(234,244,248,.9));
+}
+.levelup-overlay.show{display:grid;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.levelup-box{background:#fff;border:2px solid var(--gold);border-radius:20px;padding:20px 26px;text-align:center;box-shadow:0 16px 50px rgba(20,49,61,.2);animation:pop .5s cubic-bezier(.3,1.6,.6,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ============================================================
+   打印
+   ============================================================ */
+@media print{
+  body{background:#fff}
+  body *{visibility:hidden!important}
+  .meet-card,.meet-card *{visibility:visible!important}
+  .meet-card{position:absolute;left:0;top:0;width:100%;border-color:#1B5E8A;box-shadow:none}
+  .meet-card .no-print{display:none!important}
+}
+/* ============================================================
+   语音交互层（安澜 AI 对话 · 语音作答 · 朗读）
+   ============================================================ */
+.icon-btn{
+  width:36px;height:36px;border-radius:50%;border:1.5px solid var(--canal-light);
+  background:#fff;color:var(--canal-deep);font-size:16px;cursor:pointer;
+  display:grid;place-items:center;transition:.2s;flex:none;
+}
+.icon-btn:hover{background:var(--bg-soft);transform:rotate(30deg)}
+.icon-btn .keydot{position:absolute;margin:-24px 0 0 24px;width:9px;height:9px;border-radius:50%;background:var(--vermilion);border:2px solid #fff;display:none}
+.icon-btn.need-key .keydot{display:block}
+
+.dock{
+  position:fixed;right:14px;bottom:104px;z-index:90;width:348px;max-width:calc(100vw - 28px);
+  background:rgba(255,255,255,.97);border:1.5px solid var(--canal-light);border-radius:18px;
+  box-shadow:0 14px 44px rgba(20,49,61,.22);display:none;flex-direction:column;overflow:hidden;
+}
+.dock.open{display:flex;animation:dockIn .28s cubic-bezier(.3,1.4,.6,1)}
+@keyframes dockIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.dock-head{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(120deg,#EAF4F8,#F0F9FC);border-bottom:1px solid #DCEBF2}
+.dock-head .ava{width:40px;height:40px;flex:none}
+.dock-head .tt{flex:1;line-height:1.2}
+.dock-head .tt b{font-size:15px;color:var(--canal-deep)}
+.dock-head .tt small{display:block;font-size:11.5px;color:var(--ink-2)}
+.dock-close{background:none;border:none;font-size:20px;color:var(--ink-2);cursor:pointer;padding:4px 8px}
+.dock-body{padding:12px;height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;background:#FBFEFF}
+.dock-msg{max-width:86%;padding:9px 12px;border-radius:13px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;animation:rise .3s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dock-msg.anlan{align-self:flex-start;background:#F0F9FC;border:1px solid var(--canal-light);border-bottom-left-radius:4px}
+.dock-msg.me{align-self:flex-end;background:var(--canal);color:#fff;border-bottom-right-radius:4px}
+.dock-msg.sys{align-self:center;background:var(--bg-soft);color:var(--ink-2);font-size:12.5px;border-radius:999px;padding:5px 12px}
+.dock-foot{display:flex;gap:8px;padding:10px;border-top:1px solid #DCEBF2;background:#fff}
+.dock-foot input{flex:1;font-family:inherit;font-size:14px;padding:9px 12px;border-radius:999px;border:1.5px solid #CFE3EC;outline:none}
+.dock-foot input:focus{border-color:var(--canal)}
+.dock-btn{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;font-size:16px;display:grid;place-items:center;flex:none;transition:.18s}
+.dock-btn.mic{background:#fff;border:1.5px solid var(--canal-light);color:var(--canal-deep)}
+.dock-btn.mic.on{background:var(--vermilion);border-color:var(--vermilion);color:#fff;animation:pulse 1s infinite}
+.dock-btn.send{background:var(--canal);color:#fff}
+.dock-btn:disabled{opacity:.5}
+
+.vset-mask{
+  position:fixed;inset:0;z-index:120;background:rgba(20,49,61,.36);
+  display:none;place-items:center;padding:16px;
+}
+.vset-mask.open{display:grid}
+.vset{width:min(430px,100%);max-height:88vh;overflow-y:auto;padding:20px}
+.vset h3{color:var(--canal-deep);font-size:18px;margin-bottom:4px}
+.vset .vsub{font-size:12.5px;color:var(--ink-2);margin-bottom:14px}
+.vset .frow{margin-bottom:12px}
+.vset .frow label{display:block;font-size:13px;font-weight:700;margin-bottom:5px;color:var(--ink)}
+.vset select,.vset input[type=text],.vset input[type=password]{
+  width:100%;font-family:inherit;font-size:14px;padding:9px 12px;border-radius:10px;
+  border:1.5px solid #CFE3EC;background:#fff;color:var(--ink);outline:none;
+}
+.vset select:focus,.vset input:focus{border-color:var(--canal)}
+.vset input[type=range]{width:100%;accent-color:var(--canal)}
+.vset .chk{display:flex;align-items:center;gap:8px;font-size:14px;margin:8px 0;cursor:pointer}
+.vset .chk input{width:17px;height:17px;accent-color:var(--jade)}
+.vset .vhint{font-size:12px;color:var(--ink-2);background:var(--bg-soft);border-radius:10px;padding:9px 11px;line-height:1.7;margin-top:6px}
+
+.spk-inline{margin-left:8px}
+.stt-live{background:#fff;border:1.5px dashed var(--canal);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14.5px;min-height:44px;color:var(--ink)}
+.stt-live:empty::before{content:"你说的话会出现在这里……";color:var(--ink-2);font-size:13px}
+.anlan-fab.speaking{animation:bobFast 1.1s ease-in-out infinite}
+@keyframes bobFast{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.06)}}
+@media(max-width:560px){
+  .dock{right:8px;left:8px;width:auto;bottom:98px}
+  .dock-body{height:240px}
+}
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- ========== 顶部常驻 HUD ========== -->
+<header class="hud" role="banner" aria-label="指挥官状态栏">
+  <div class="hud-left">
+    <div class="commander-badge" id="commanderBadge" role="img" aria-label="漕运指挥官徽章"></div>
+    <div class="commander-meta">
+      <div class="t1">漕运指挥官</div>
+      <div class="t2" id="hudCode">漕运小将</div>
+    </div>
+  </div>
+  <div class="hud-center">
+    <div class="pet-mini" id="hudPet" role="img" aria-label="灵宠当前形态"></div>
+    <div class="energy-wrap">
+      <div class="energy-bar" role="progressbar" aria-label="灵宠能量"><div id="energyFill"></div></div>
+      <div class="energy-text" id="energyText">能量 0 · 灵宠「漕灵」</div>
+    </div>
+  </div>
+  <div class="hud-right">
+    <button class="icon-btn" id="voiceSetBtn" title="语音与 AI 设置" aria-label="语音与 AI 设置">⚙<span class="keydot"></span></button>
+    <div class="stat"><b id="hudStage">阶 0</b><small>灵宠阶位</small></div>
+    <div class="stat"><b id="hudArtifacts">0/10</b><small>已完成文物</small></div>
+  </div>
+</header>
+
+<!-- ========== 右侧章节导航 ========== -->
+<nav class="chapter-nav" id="chapterNav" aria-label="章节进度导航"></nav>
+
+<!-- ========== 安澜悬浮形象 ========== -->
+<button class="anlan-fab" id="anlanFab" aria-label="小河灵安澜，点击获取提示"></button>
+<div class="anlan-tip" id="anlanTip" role="status"></div>
+
+<!-- ========== 分屏滚动容器 ========== -->
+<main id="scroller" aria-label="漕运指挥官探险流程"></main>
+
+<!-- 升阶提示层 -->
+<div class="levelup-overlay" id="levelupOverlay" aria-live="assertive">
+  <div class="levelup-box" id="levelupBox"></div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+ * 0. 工具函数
+ * ============================================================ */
+var $ = function(sel, root){ return (root||document).querySelector(sel); };
+var $$ = function(sel, root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); };
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function pick(arr){ return arr[randInt(0,arr.length-1)]; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function fmtDate(d){ var y=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),day=('0'+d.getDate()).slice(-2); return y+'年'+m+'月'+day+'日'; }
+function fmtDur(sec){ sec=Math.max(0,Math.round(sec)); var m=Math.floor(sec/60),s=sec%60; return m>0?(m+'分'+s+'秒'):(s+'秒'); }
+
+var toastTimer=null;
+function toast(msg){
+  var t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove('show'); },2200);
+}
+
+/* ============================================================
+ * 1. 音效层（WebAudio 实时合成，无音频文件）
+ * ============================================================ */
+var Sound=(function(){
+  var ctx=null;
+  function ac(){
+    if(ctx) return ctx;
+    try{
+      var C=window.AudioContext||window.webkitAudioContext;
+      if(!C) return null;
+      ctx=new C();
+    }catch(e){ ctx=null; }
+    return ctx;
+  }
+  function tone(freq,dur,type,vol,when,glideTo){
+    var a=ac(); if(!a) return;
+    try{
+      if(a.state==='suspended' && a.resume) a.resume();
+      var t0=(when||a.currentTime);
+      var o=a.createOscillator(), g=a.createGain();
+      o.type=type||'sine'; o.frequency.setValueAtTime(freq,t0);
+      if(glideTo) o.frequency.exponentialRampToValueAtTime(glideTo,t0+dur);
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(vol||0.16,t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+      o.connect(g); g.connect(a.destination);
+      o.start(t0); o.stop(t0+dur+0.03);
+    }catch(e){}
+  }
+  return {
+    tap:function(){ tone(660,0.08,'triangle',0.10); },
+    correct:function(){ tone(660,0.14,'sine',0.14); tone(880,0.16,'sine',0.12,null,0); var a=ac(); if(a) { tone(990,0.22,'sine',0.12,a.currentTime+0.12); } },
+    gentle:function(){ tone(523,0.18,'sine',0.10); var a=ac(); if(a) tone(392,0.22,'sine',0.08,a.currentTime+0.12); },
+    chord:function(freqs,dur){ (freqs||[523,659,784]).forEach(function(f,i){ var a=ac(); if(!a) return; tone(f,dur||0.5,'sine',0.12,a.currentTime+i*0.05); }); },
+    levelUp:function(){ var f=[523,659,784,1047]; var a=ac(); if(!a) return; f.forEach(function(v,i){ tone(v,0.35,'triangle',0.14,a.currentTime+i*0.11); }); },
+    splash:function(){ tone(300,0.25,'sine',0.10,null,900); }
+  };
+})();
+
+/* ============================================================
+ * 1.5 语音层（朗读 / 语音识别 / 安澜 AI 对话）
+ * ============================================================ */
+var Voice=(function(){
+  var VKEY='canalVoice_v1';
+  var cfg=(function(){
+    try{ var o=JSON.parse(localStorage.getItem(VKEY)); if(o&&typeof o==='object') return o; }catch(e){}
+    return {};
+  })();
+  if(cfg.ttsOn==null) cfg.ttsOn=true;
+  if(cfg.autoRead==null) cfg.autoRead=true;
+  if(!cfg.rate) cfg.rate=1;
+  function save(){ try{ localStorage.setItem(VKEY, JSON.stringify(cfg)); }catch(e){} }
+
+  /* ---------- 朗读 ---------- */
+  function zhVoice(){
+    var vs=[];
+    try{ vs=speechSynthesis.getVoices(); }catch(e){ return null; }
+    var zh=vs.filter(function(v){ return /zh|cmn|中文/i.test(v.lang+v.name); });
+    return zh[0]||vs[0]||null;
+  }
+  function cleanForSpeech(t){
+    return String(t||'').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}🔊🎤📜💡✅⏭]/gu,'').replace(/\s+/g,' ').trim();
+  }
+  function speak(text, opts){
+    opts=opts||{};
+    if(!cfg.ttsOn && !opts.force) return 0;
+    try{
+      speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(cleanForSpeech(text));
+      var v=zhVoice(); if(v) u.voice=v;
+      u.lang='zh-CN'; u.rate=cfg.rate; u.pitch=1.12;
+      var fab=$('#anlanFab'); if(fab) fab.classList.add('speaking');
+      u.onend=u.onerror=function(){ if(fab) fab.classList.remove('speaking'); if(opts.onend) opts.onend(); };
+      speechSynthesis.speak(u);
+      return 1;
+    }catch(e){ return 0; }
+  }
+  function stopSpeak(){ try{ speechSynthesis.cancel(); }catch(e){} var fab=$('#anlanFab'); if(fab) fab.classList.remove('speaking'); }
+
+  /* ---------- 语音识别 ---------- */
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  function sttSupported(){ return !!SR; }
+  /* listen({onPartial, onFinal(text,dur), onError}) → {stop, cancel} */
+  function listen(opts){
+    opts=opts||{};
+    if(!SR){ if(opts.onError) opts.onError('unsupported'); return {stop:function(){},cancel:function(){}}; }
+    var r=new SR();
+    r.lang='zh-CN'; r.interimResults=true; r.continuous=false; r.maxAlternatives=1;
+    var t0=Date.now(), final='', settled=false;
+    r.onresult=function(e){
+      var interim='';
+      for(var i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+        else interim+=e.results[i][0].transcript;
+      }
+      if(opts.onPartial) opts.onPartial((final+interim).trim());
+    };
+    r.onerror=function(e){
+      if(settled) return; settled=true;
+      if(opts.onError) opts.onError(e.error||'error');
+    };
+    r.onend=function(){
+      if(settled) return; settled=true;
+      if(opts.onFinal) opts.onFinal(final.trim(), (Date.now()-t0)/1000);
+    };
+    try{ r.start(); }catch(e){ if(opts.onError && !settled){ settled=true; opts.onError('start'); } }
+    return {
+      stop:function(){ try{ r.stop(); }catch(e){} },
+      cancel:function(){ settled=true; try{ r.abort(); }catch(e){} }
+    };
+  }
+
+  /* ---------- 安澜 AI ---------- */
+  function aiReady(){ return !!(cfg.base && cfg.key && cfg.model); }
+  function personaPrompt(){
+    var kb=ARTIFACTS.map(function(a){
+      var qa=a.task.parts.map(function(p){ return p.prompt+'（答案要点：'+p.explain+'）'; }).join('；');
+      return '【'+a.name+'】'+a.era+'，位于'+a.hall+'。\n知识：'+a.facts.join('；')+'\n互动问答：'+qa;
+    }).join('\n');
+    return '你是「小河灵·安澜」，中国大运河博物馆里的一只水精灵，正陪伴一位 6 到 10 岁的小小「漕运指挥官」参观学习。\n'+
+      '说话要求：像温柔的大朋友，句子短、口语化、多鼓励；每次回答不超过 80 字；不说教、不吓唬；可以适当用「哇」「你发现了吗」这类语气。\n'+
+      '回答必须基于下面的知识库；超出范围就诚实地说「这个我还要去问问馆长，我们先看看身边的文物吧」。\n\n【大运河知识库】\n'+kb;
+  }
+  function chat(userText, ctxNote, historyArr, cb){
+    if(!aiReady()){ cb(new Error('no-key')); return; }
+    var msgs=[{role:'system', content:personaPrompt()}];
+    if(ctxNote) msgs.push({role:'system', content:'【当前场景】'+ctxNote});
+    (historyArr||[]).slice(-6).forEach(function(m){ msgs.push(m); });
+    msgs.push({role:'user', content:userText});
+    fetch(cfg.base.replace(/\/+$/,'')+'/chat/completions',{
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+cfg.key },
+      body: JSON.stringify({ model:cfg.model, messages:msgs, stream:false, temperature:0.8, max_tokens:220 })
+    }).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(j){
+      var t=j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      cb(null, String(t||'').trim());
+    }).catch(function(e){ cb(e); });
+  }
+  /* 无 AI 时的本地应答：从知识库里找相关句子 */
+  function localChat(userText, ctxNote){
+    var t=String(userText||'');
+    var best=null, bestScore=0;
+    ARTIFACTS.forEach(function(a){
+      var hay=a.name+a.era+a.facts.join('')+a.artIntro;
+      var score=0;
+      for(var i=0;i<t.length-1;i++){
+        var bi=t.slice(i,i+2);
+        if(/[\u4e00-\u9fa5]{2}/.test(bi) && hay.indexOf(bi)>-1) score++;
+      }
+      if(a.name && t.indexOf(a.name.replace(/[「」]/g,''))>-1) score+=8;
+      if(score>bestScore){ bestScore=score; best=a; }
+    });
+    if(best && bestScore>=3){
+      return pick(best.facts)+' 你还想知道哪件文物的故事呀？';
+    }
+    return pick([
+      '这个问题好有意思！点右上角的小齿轮，给我配上 AI 钥匙，我就能陪你聊更多啦。',
+      '嗯……这个我要想一想。你可以问问我身边这些文物的故事，比如「南旺分水」或「虹桥」！',
+      '哇，你的小脑瓜转得真快！先去完成任务卡，再来找我聊吧。'
+    ]);
+  }
+  return { cfg:cfg, save:save, speak:speak, stopSpeak:stopSpeak, sttSupported:sttSupported,
+           listen:listen, aiReady:aiReady, chat:chat, localChat:localChat };
+})();
+try{ speechSynthesis.onvoiceschanged=function(){}; }catch(e){}
+
+/* 语音作答：把孩子的语音匹配到选项 */
+function normVoiceText(s){ return String(s||'').toLowerCase().replace(/[^一-龥a-z0-9]/g,''); }
+var VOICE_IDX={'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'1':1,'2':2,'3':3,'4':4,'5':5,'a':1,'b':2,'c':3,'d':4,'e':5};
+function matchVoiceChoice(text, options){
+  var t=normVoiceText(text);
+  if(!t) return -1;
+  var m=t.match(/第([一二两三四五12345abcde])(?:个|项|条|答案|选项)/) || t.match(/^(?:选|是|我觉得)?([一二两三四五12345abcde])(?:个|项|条|答案|选项)?$/);
+  if(m){ var idx=VOICE_IDX[m[1]]; if(idx && idx<=options.length) return idx-1; }
+  var best=-1, bestScore=0;
+  options.forEach(function(o,j){
+    var label=normVoiceText(o.label);
+    if(!label) return;
+    var score=0;
+    if(t.indexOf(label)>-1 || (t.length>=2 && label.indexOf(t)>-1)){ score=100+Math.min(t.length,label.length); }
+    else{
+      var hit=0, seen={};
+      for(var i=0;i<t.length;i++){ var ch=t[i]; if(!seen[ch] && label.indexOf(ch)>-1){ seen[ch]=1; hit++; } }
+      score=(hit>=2)? hit/Math.min(t.length||1, label.length)*60 : 0;
+    }
+    if(score>bestScore){ bestScore=score; best=j; }
+  });
+  return bestScore>=42? best : -1;
+}
+function voiceAnswer(art,i,part,partEl,local,root,btn){
+  if(part.kind!=='choice'){ toast('这道题用小手点一点更准确哦～'); return; }
+  if(!Voice.sttSupported()){ toast('这个浏览器听不到声音，用手点也可以哦～'); return; }
+  var oldHtml=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='🔴 正在听…';
+  toast('开始啦，说出你的答案吧！');
+  var session=Voice.listen({
+    onFinal:function(text){
+      btn.disabled=false; btn.innerHTML=oldHtml;
+      if(!text){ toast('没听清，再说一次试试～'); return; }
+      var idx=matchVoiceChoice(text, part.options);
+      if(idx<0){ toast('安澜没听出你选哪个，可以说「第一个」或「第二个」～'); return; }
+      $$('.opt',partEl).forEach(function(b){ b.classList.remove('sel'); });
+      var target=$$('.opt',partEl)[idx];
+      if(target){ target.classList.add('sel'); local.sel[i]=idx; }
+      toast('你选的是：'+part.options[idx].label);
+      setTimeout(function(){ checkPart(art,i,part,partEl,local,root); }, 500);
+    },
+    onError:function(){
+      btn.disabled=false; btn.innerHTML=oldHtml;
+      toast('这里听不到你的声音，用手点也可以哦～');
+    }
+  });
+  setTimeout(function(){ session.stop(); }, 7000);
+}
+
+/* ============================================================
+ * 2. 数据层
+ * ============================================================ */
+var CHAPTERS=[
+  { id:'ch1', no:'第一章', name:'历史演变', part:'运河沧桑 王朝基业', dim:'history', energy:80,
+    intro:'孩子，欢迎登上大运河的「时间船」！我是小河灵·安澜。大运河从两千多年前就开始挖啦——东周、隋、唐、宋、元……一个个朝代接力，把它变长、变直、变忙。我先给你注入一股「时光之力」，让你身边这颗漕灵珠醒过来！' },
+  { id:'ch2', no:'第二章', name:'水工智慧', part:'天工慧光 中华勋业', dim:'engineering', energy:80,
+    intro:'运河要翻山、要跨河，古人到底怎么办到的？靠的是了不起的水工智慧！分水、船闸、木拱桥……每一样都是古人的「黑科技」。你的灵宠又要长大一点点啦！' },
+  { id:'ch3', no:'第三章', name:'国家管理', part:'融通九州 社稷鸿业', dim:'management', energy:80,
+    intro:'那么长的运河，那么多人运粮，怎么才能不出乱子？古人发明了一整套管理办法：官职、制度、时间表……这就是「国家管理」的智慧。来，让灵宠再壮实一些！' },
+  { id:'ch4', no:'第四章', name:'生活百态', part:'泽被天下 万民生业', dim:'life', energy:80,
+    intro:'大运河不只有粮船和官吏，还有热腾腾的生活：晒盐、摆宴、做买卖……运河把南北的味道和人聚在了一起。最后一章，我们一起去逛逛运河边的烟火气！' }
+];
+var CHAPTER_BY_ID={}; CHAPTERS.forEach(function(c){ CHAPTER_BY_ID[c.id]=c; });
+
+var ARTIFACTS=[
+  {
+    id:'tongcuo', chapter:'ch1', name:'铜错红铜敦', era:'东周 · 盛食器',
+    hall:'第一部分「运河沧桑 王朝基业」', svgKey:'dun',
+    artIntro:'看这件胖乎乎、长着三条小腿的铜器，它叫「敦」，是东周人盛饭的宝贝。它身上藏着一个秘密——「错红铜」。你猜猜，古人是怎样把两种不同的铜贴在一起，还做得这么好看？',
+    facts:[
+      '敦是盛行于东周时期的盛食器，最早出现在中原文化区和楚文化区，并逐渐向周边传播。',
+      '这件铜敦造型规整、保存完好，表面使用错红铜工艺，口沿上下一周装饰几何纹与行龙纹，纹饰朴拙、工艺精湛，整体呈现强烈的楚文化特征。',
+      '春秋战国时期，出于发展经济、军事征伐等目的，各诸侯国争相开挖运河：吴国的邗沟、越国的山阴故水道、魏国的鸿沟、齐国的淄济运河、楚国的江汉运河……「有余则用溉浸，百姓飨其利」。',
+      '拓展·青铜嵌错工艺：在铸好的青铜器表面阴刻花纹图案，把红铜/金/银丝（片）打进沟槽内，错平磨光，利用金属色泽差异形成醒目装饰。红铜嵌错工艺春秋晚期到战国早中期达到高峰。'
+    ],
+    task:{ title:'任务卡 · 小小青铜鉴定师', parts:[
+      { kind:'choice', prompt:'「错红铜」是什么意思？', options:[
+        { label:'把红铜丝/片嵌进青铜器表面的沟槽里，错平磨光', correct:true },
+        { label:'用红铜颜料给铜器涂色', correct:false },
+        { label:'把铜器放到火里烧红', correct:false }
+      ], explain:'红铜与青铜颜色不同，嵌进去、磨平了才好看——这就是「错」。' }
+    ]},
+    reward:{ energy:40, dim:'history' }
+  },
+  {
+    id:'shuanglong', chapter:'ch1', name:'隋青釉双龙柄盘口壶', era:'隋代 · 青瓷',
+    hall:'第一部分「运河沧桑 王朝基业」', svgKey:'hu',
+    artIntro:'这只壶的两个「耳朵」其实是两条龙！它们从壶肩往上钻，到壶口一低头，嘴巴紧紧咬住壶口。隋朝人还开凿了大运河的第一次大贯通，这壶就出土在那个年代。数数看，一共有几条龙？',
+    facts:[
+      '胎体厚薄均匀，釉面光泽柔和；双龙自肩部引颈向上，至盘口处急转俯视，张口紧衔盘口，充满艺术表现力，是隋代青瓷的精品之作，主要出土于隋唐时期两京地区的贵族墓葬中。',
+      '隋统一全国后，先后开凿疏浚了广通渠、通济渠、山阳渎、永济渠、江南运河，完成了中国大运河历史上的第一次大贯通。',
+      '它以洛阳为中心连接南北东西，开启隋代「万国来朝」的鼎盛局面，为此后唐宋时期的社会发展与经济繁荣奠定基础。'
+    ],
+    task:{ title:'任务卡 · 观察与连线', parts:[
+      { kind:'choice', prompt:'壶上有几条龙？它们的头在做什么？', options:[
+        { label:'2 条龙，龙口紧衔壶口', correct:true },
+        { label:'4 条龙，龙尾盘在壶底', correct:false },
+        { label:'1 条龙，龙身绕壶一周', correct:false }
+      ], explain:'两条龙引颈向上，到盘口急转俯视，张口紧衔盘口。' },
+      { kind:'choice', prompt:'隋代大运河的中心城市是？', options:[
+        { label:'洛阳', correct:true },
+        { label:'开封', correct:false },
+        { label:'扬州', correct:false }
+      ], explain:'隋代大运河以洛阳为中心，连接南北东西。' }
+    ]},
+    reward:{ energy:40, dim:'history' }
+  },
+  {
+    id:'bianhe', chapter:'ch1', name:'开封州桥遗址汴河剖面', era:'隋 · 唐 · 宋 · 元（汴河）',
+    hall:'第一部分「运河沧桑 王朝基业」· 展厅里最大的文物', svgKey:'poumian',
+    artIntro:'找一找，展厅里最大的文物就藏在这儿！它像一堵巨大的墙，上面一层一层的，是汴河留给我们的「时间密码」。古时候的河，如今被切成了好多片搬进展厅。咱们做一回寻宝侦探吧！',
+    facts:[
+      '这件大型文物来自开封州桥遗址的汴河河道剖面，横宽 25.7 米，纵高 8 米，上面缀满了运河变迁的「时间密码」。',
+      '汴河即隋大业元年（公元 605 年）开凿的通济渠；唐称广济渠或汴河，宋称汴河或汴渠，是黄淮之间水运的重要通道。',
+      '唐安史之乱后全国经济重心南移，汴河漕运作用逐渐凸显；北宋定都开封，迎来汴河漕运的鼎盛；南宋建炎二年（公元 1128 年）黄河改道，汴河断航；至元代大运河截弯取直，汴河逐渐失去漕运功能。',
+      '自下而上观察剖面：白色的地层线由宽阔的锅底形逐渐趋平，展现了汴河从宽阔畅通逐渐淤没到无法行船的史实。明代以后河道被侵占、收窄，至明末逐渐变为城内的排水沟。',
+      '考古发掘现场把它分割成 180 余片宽 1 米、高近 2 米的长方形单元，逐一编号揭取，经保护后运送至展厅，重新缀合黏连。'
+    ],
+    task:{ title:'任务卡 · 寻宝侦探三连问', parts:[
+      { kind:'choice', prompt:'（1）找出展厅里最大的文物', options:[
+        { label:'铜错红铜敦', correct:false },
+        { label:'汴河剖面', correct:true },
+        { label:'隋青釉双龙柄盘口壶', correct:false }
+      ], explain:'汴河剖面横宽 25.7 米、纵高 8 米，是展厅里最大的文物。' },
+      { kind:'choice', prompt:'（2）它被分成了多少片？', options:[
+        { label:'180 余片', correct:true },
+        { label:'80 余片', correct:false },
+        { label:'800 余片', correct:false }
+      ], explain:'被分割成 180 余片宽 1 米、高近 2 米的长方形单元，逐一编号揭取。' },
+      { kind:'choice', prompt:'（3）地层线由「宽阔的锅底形」变「平」，说明什么？', options:[
+        { label:'河道越来越窄、逐渐淤积', correct:true },
+        { label:'河水流得越来越快', correct:false },
+        { label:'河道越来越深', correct:false }
+      ], explain:'由锅底形趋平，说明汴河从宽阔畅通逐渐淤没到无法行船。' }
+    ]},
+    reward:{ energy:60, dim:'history' }
+  },
+  {
+    id:'nanwang', chapter:'ch2', name:'南旺分水枢纽模型', era:'明代', hall:'第二部分「天工慧光 中华勋业」', svgKey:'nanwang',
+    artIntro:'运河流到山东，遇到了全线上最高的「坡」。想让船翻过这道坡，就得给水「分流」。古人找到了一个绝妙的点——南旺。分水以后，水往哪儿去、各分多少，这里头还有个口诀哦！',
+    facts:[
+      '会通河是京杭大运河全线地势最高、地形高差最大的河段，船队想在此翻山越岭，必须找准分水岭、合理分流用水。',
+      '元代会通河开凿后因未选择最高点分水，水源问题始终没有根本解决，会通河北段淤塞难行。',
+      '明永乐九年，工部尚书宋礼采用了汶上老人白英的建议，把分水点从济宁改至南旺，构建了集引、蓄、分、排于一体的南旺分水枢纽工程。',
+      '通过修筑戴村坝把汶水拦截，再开挖小汶河把汶水引至南旺，同时收集疏导泉河，使南北分水补给运河，最终实现「七分朝天子、三分下江南」的合理分流。',
+      '拓展·白英（1363—1419），字节之，山西洪洞人，民间水利专家，长年劳动生活在运河岸边，对地势水情十分熟悉，提出一整套治水方案并亲自规划、指挥施工。'
+    ],
+    task:{ title:'任务卡 · 分水小工程师', parts:[
+      { kind:'pair', prompt:'把水的去向和比例配对：', leftLabels:['向北（朝天子）','向南（下江南）'], rightOptions:['7 份','3 份'], answers:[0,1],
+        explain:'「七分朝天子、三分下江南」——七成水向北，三成水向南。' },
+      { kind:'choice', prompt:'提出关键分水建议的是谁？', options:[
+        { label:'民间水利专家白英', correct:true },
+        { label:'工部尚书宋礼', correct:false },
+        { label:'皇帝', correct:false }
+      ], explain:'工部尚书宋礼采用了汶上老人白英的建议，把分水点改至南旺。' }
+    ]},
+    reward:{ energy:40, dim:'engineering' }
+  },
+  {
+    id:'changan', chapter:'ch2', name:'长安闸模型', era:'北宋 · 崇宁二年（公元 1103 年）', hall:'第二部分「天工慧光 中华勋业」', svgKey:'changan',
+    artIntro:'船要过闸，水就会漏掉一些，缺水的地方可受不了。北宋人很聪明，他们给闸配了两个「大水柜」，叫「澳」，让水能循环用。我们来排一排，水是怎样转圈圈的？',
+    facts:[
+      '中国是世界上最早使用船闸和建造多级船闸的国家。复式船闸的创建是世界航运工程技术的一大进步，但每次开闸总要泄走一部分水量，加重了缺水河段的水源负担。',
+      '北宋崇宁二年（公元 1103 年），为达到水量循环利用的目的，在浙江长安镇长安三闸增设两澳，使长安闸由复闸升级为澳闸。',
+      '澳，即水柜或贮水塘。水澳的进出水口与船闸闸室相连，由闸门控制：上澳的水能放入闸室，闸室的水能放入下澳，下澳的水可以用水车输送至上澳，使部分水量可被重复使用。',
+      '北宋时期，澳闸迅速在淮扬运河、江南运河中的缺水河段普及，成为沿线城市农商百业发展的重要保障。'
+    ],
+    task:{ title:'任务卡 · 水循环排排队', parts:[
+      { kind:'order', prompt:'排出让水循环使用的正确顺序（从上澳开始）：', items:['上澳','闸室','下澳','水车送回上澳'],
+        explain:'上澳 → 闸室 → 下澳 →（水车送回）→ 上澳，水就这样转圈圈被重复使用。' },
+      { kind:'choice', prompt:'「澳」是什么？', options:[
+        { label:'水柜 / 贮水塘', correct:true },
+        { label:'一座桥', correct:false },
+        { label:'一个市场', correct:false }
+      ], explain:'澳，即水柜或贮水塘，用来储存和循环闸室里的水。' }
+    ]},
+    reward:{ energy:40, dim:'engineering' }
+  },
+  {
+    id:'hongqiao', chapter:'ch2', name:'汴水虹桥模型', era:'北宋 · 据《清明上河图》复原', hall:'第二部分「天工慧光 中华勋业」· 展厅顶部', svgKey:'hongqiao',
+    artIntro:'抬头看！展厅顶上挂着一座彩虹一样的桥，它是照着《清明上河图》里的「上土桥」做的。它最神奇的地方是——没有桥柱，也不用榫卯，全靠木头互相「编织」在一起。它做到了两件「不用」的事，你找得到吗？',
+    facts:[
+      '这座桥梁模型是根据北宋张择端《清明上河图》画面中心的「上土桥」进行的复原。',
+      '「上土桥」属于结构非常特殊的木拱桥：搭建过程中不使用榫卯和支柱，通过在木纵梁之间相互叠压、搭入若干木横梁，形成独特的「编织结构」，实现力学平衡。',
+      '由于没有桥柱，它们像彩虹一样横卧在水面上，故称「虹桥」。',
+      '宋初汴河受黄河影响时常暴涨暴落，桥柱立于激流之中会增加桥梁坍塌的风险；为保证结构安全、防止激流冲击，没有桥柱的虹桥就此诞生。它使用很短的材料形成了很长的跨度，在世界桥梁史上也十分罕见。'
+    ],
+    task:{ title:'任务卡 · 虹桥的秘密', parts:[
+      { kind:'multi', prompt:'虹桥「不用」哪两样东西？（可多选）', options:[
+        { label:'榫卯', correct:true },
+        { label:'桥柱', correct:true },
+        { label:'石头', correct:false },
+        { label:'木头', correct:false }
+      ], explain:'虹桥不使用榫卯和支柱，靠木纵梁相互叠压、搭入横梁形成「编织结构」。' },
+      { kind:'choice', prompt:'虹桥为什么不要柱子？', options:[
+        { label:'激流冲击桥柱容易坍塌', correct:true },
+        { label:'柱子太贵了', correct:false },
+        { label:'只是为了让桥更好看', correct:false }
+      ], explain:'汴河时常暴涨暴落，桥柱立在激流中会增加坍塌风险。' }
+    ]},
+    reward:{ energy:40, dim:'engineering' }
+  },
+  {
+    id:'gongshu', chapter:'ch3', name:'总督漕运公署遗址复原模型', era:'明清 · 明万历七年（公元 1579 年）', hall:'第三部分「融通九州 社稷鸿业」', svgKey:'gongshu',
+    artIntro:'这是明清时期漕运总督办公的大院子，光占地就有三万平方米！全国运粮的事都要在这里安排：谁收粮、谁押船、什么时候到京，全都排得清清楚楚。我们把粮的旅程排好队吧！',
+    facts:[
+      '建筑群启用于明万历七年（公元 1579 年），占地面积约 3 万平方米，是明清时期漕运总督办公的处所；漕运总督可同时加授兵部和都察院之官职，故亦有「部院」之称。',
+      '中央漕运及漕仓管理归云南司；地方漕运的最高长官为漕运总督，驻淮安统领漕政；各省粮道监督漕粮的征收和起运；州县官员负责征收漕粮；漕粮搬运由数量庞大的运丁承担。',
+      '漕运总督是明景泰年间创设的官职；清代逐步成为专门管理漕运事务的官员，首要职责是管理漕政，也具有总督军务的职能，所属卫军称运军，和平时期负责护送漕粮。'
+    ],
+    task:{ title:'任务卡 · 漕粮的旅程', parts:[
+      { kind:'order', prompt:'把漕粮的旅程排出正确顺序：', items:['州县征收漕粮','起运过淮','按时核查催促','运丁搬运','抵京入仓'],
+        explain:'州县征收 → 起运过淮 → 按时核查催促 → 运丁搬运 → 抵京入仓。' },
+      { kind:'choice', prompt:'漕运总督驻在哪儿？', options:[
+        { label:'淮安', correct:true },
+        { label:'苏州', correct:false },
+        { label:'杭州', correct:false }
+      ], explain:'漕运总督驻淮安统领漕政。' }
+    ]},
+    reward:{ energy:40, dim:'management' }
+  },
+  {
+    id:'buzi', chapter:'ch3', name:'平金银绣锦鸡纹二品文官补', era:'清代 · 补子', hall:'第三部分「融通九州 社稷鸿业」', svgKey:'buzi',
+    artIntro:'这件方方的绣片叫「补子」，是古人缝在官服上的「身份牌」。上面绣着一只昂头向日的锦鸡——它能告诉我们穿这件衣服的官有多大。说不定还能告诉我们漕运总督有多厉害呢！',
+    facts:[
+      '补子是明清时期装饰在官服上、用于区分身份等级的重要标志，源于金元时期的胸背，明代后期出现先缝后补的制作工艺，故称「补子」。',
+      '清代官服对襟、前胸开片，所以上方的方补中间对开门而成两个半块，为前胸所用。补子左上角用珊瑚米珠绣红日，代表天子、象征权力的中心。',
+      '中间主体纹样为一只立于海水江崖之上、昂头向日的锦鸡，既代表对帝王的尊敬，又有江山永固之意；空中排列「壬字云」，散布八宝纹，边缘装饰蝙蝠、寿字纹，寓意福寿吉祥。',
+      '其锦鸡纹样为清代二品文官所用。漕运总督在清代即为正二品官职，如兼任兵部尚书或都察院右都御史，则升为从一品。',
+      '拓展：清代文官补子缀绣禽鸟——一品仙鹤、二品锦鸡、三品孔雀、四品云雁、五品白鹇、六品鹭鸶、七品鸂鶒、八品鹌鹑、九品及未入流练雀。'
+    ],
+    task:{ title:'任务卡 · 官大不大，看补子', parts:[
+      { kind:'choice', prompt:'哪件文物能证明「漕运总督是个很大的官」？', options:[
+        { label:'这对平金银绣锦鸡纹二品文官补', correct:true },
+        { label:'一把镇水剑', correct:false },
+        { label:'一个粮仓模型', correct:false }
+      ], explain:'锦鸡纹为清代二品文官所用，而漕运总督在清代即为正二品官职。' },
+      { kind:'choice', prompt:'二品文官的补子上绣什么鸟？', options:[
+        { label:'锦鸡', correct:true },
+        { label:'仙鹤', correct:false },
+        { label:'孔雀', correct:false }
+      ], explain:'一品仙鹤、二品锦鸡、三品孔雀。' }
+    ]},
+    reward:{ energy:40, dim:'management' }
+  },
+  {
+    id:'yanpan', chapter:'ch4', name:'煎盐盘铁', era:'明清 · 制盐工具', hall:'第四部分「泽被天下 万民生业」', svgKey:'yanpan',
+    artIntro:'一大片盐，是怎么从海水变出来的？靠的是「晒、淋、煎」三步。这块盘铁是煎盐用的，有趣的是，它被分成很多块，每家保管一角，煎盐时再拼起来——为什么要这样呢？',
+    facts:[
+      '这是「盘煎法」制盐过程中的煎煮工具：使用时将卤水倾入盘内，以柴火煎烧，数小时即可成盐。',
+      '盘有铁制和竹制两种，「浙东以竹编，浙西以铁铸」。铁制者称盘铁，多由若干铁板组合而成，官制民用，每户各保管一角，煎盐时拿到指定地点拼接，需要相互配合才能共同完成制盐，「非一灶一丁之所有」。',
+      '江苏是中国著名的海盐产区之一，所产海盐称「淮盐」。大运河是淮盐运销的必经之道，食盐通过运河集散、中转运输到各地，带动了两淮盐区城镇的繁荣。',
+      '拓展：元代典籍《熬波图》记载制盐流程——整理滩涂空地，把海水浇灌到空地上形成盐土；将草木灰均匀撒在盐土上晾晒；把沾有白色小盐粒的草木灰铺撒至灰坑内并舀海水浇灌，淋下的卤水顺着灰坑底部管道流入卤井；最后把卤水煎煮，待水分蒸发结晶成盐。'
+    ],
+    task:{ title:'任务卡 · 海水变盐三步走', parts:[
+      { kind:'order', prompt:'排出制盐的顺序：', items:['晒灰（海水浇灌成盐土 + 撒草木灰晾晒）','淋卤（灰入坑、舀海水淋出卤水入卤井）','煎煮结晶'],
+        explain:'晒灰 → 淋卤 → 煎煮结晶，海水就变成了白花花的盐。' },
+      { kind:'choice', prompt:'盘铁为什么「每户各保管一角」？', options:[
+        { label:'要大家合作拼合起来才能煎盐', correct:true },
+        { label:'为了公平分配食盐', correct:false },
+        { label:'因为铁太重搬不动', correct:false }
+      ], explain:'盘铁由若干铁板组合而成，非一灶一丁之所有，需要相互配合才能共同完成制盐。' }
+    ]},
+    reward:{ energy:40, dim:'life' }
+  },
+  {
+    id:'qingyunlou', chapter:'ch4', name:'「庆云楼」匾额', era:'清代 · 清道光年间', hall:'第四部分 / 第五部分 · 运河商贸与生活', svgKey:'bian',
+    artIntro:'这块匾额上写着「庆云楼」，它是一家老酒楼的名字。靠着大运河，南来北往的人都在这儿吃饭。为了让爱吃甜的和爱吃酸的客人都满意，厨师想出了一道名菜……你猜到是什么了吗？',
+    facts:[
+      '「庆云楼」匾额是大运河跨区域商贸交流的历史见证。庆云楼始建於清道光年间，是北京地区最早的高端鲁菜酒楼，原址位于什刹海旁的烟袋斜街内。',
+      '元代通惠河建成之后，积水潭成为漕运终点码头；为缩短码头至鼓楼之间的距离而修筑的烟袋斜街，是当时这一区域运输贸易的「生命线」。',
+      '拓展：糖醋黄河大鲤鱼是庆云楼的传统名菜。针对南方人「嗜甜」、山西人「嗜酸」的习惯，厨师在当地酥鱼的基础上加入「糖」和「醋」调味，糖醋鱼由此诞生。',
+      '摆盘时把糖醋黄河大鲤鱼做成头尾高翘之势，呼之曰「鲤鱼跳龙门」——龙门位于山陕间黄河峡谷咽喉之处，每年春季黄河鲤鱼溯流而上受阻于龙门，只有极少数能跳跃而过，「跳龙门」又有奋发向上、吉祥的寓意。'
+    ],
+    task:{ title:'任务卡 · 一条鱼里的南北', parts:[
+      { kind:'pair', prompt:'把口味和来客配对：', leftLabels:['南方人','山西人'], rightOptions:['嗜甜','嗜酸'], answers:[0,1],
+        explain:'南方人嗜甜、山西人嗜酸，厨师加了糖和醋，正中两边口味。' },
+      { kind:'pair', prompt:'把菜名与寓意配对：', leftLabels:['糖醋黄河大鲤鱼（头尾高翘）'], rightOptions:['「鲤鱼跳龙门」· 寓意奋发向上'], answers:[0],
+        explain:'头尾高翘，呼之曰「鲤鱼跳龙门」，寓意奋发向上、吉祥。' }
+    ]},
+    reward:{ energy:40, dim:'life' }
+  }
+];
+var ART_BY_ID={}; ARTIFACTS.forEach(function(a){ ART_BY_ID[a.id]=a; });
+
+/* 关键词库（中期答案的个性化判定） */
+var KEYWORDS={
+  engineering:['聪明','厉害','巧妙','怎么想','发明','造','闸','桥','水','分水','机器'],
+  history:['很久','古代','以前','朝代','变化','原来','时间','老'],
+  management:['规矩','公平','管理','官','制度','粮','税','排好','秩序','合作'],
+  life:['好吃','漂亮','辛苦','喜欢','想','感动','家','开心','难过','谢谢','温暖','朋友','画']
+};
+var DIM_LABEL={ history:'历史演变', engineering:'水工智慧', management:'国家管理', life:'生活百态' };
+
+/* 性格规则表 */
+var PERSONALITIES={
+  engineering:{ key:'engineering', name:'巧思工程师', color:'#2E86C1', feature:'背鳍变成小齿轮纹', motto:'让我想想怎么造出来！' },
+  history:{ key:'history', name:'时空观察者', color:'#7D5BA6', feature:'身体上有年轮纹', motto:'那是很久很久以前……' },
+  management:{ key:'management', name:'公正守护者', color:'#C0392B', feature:'头顶小冠，神气又公正', motto:'排好队，我们出发！' },
+  life:{ key:'life', name:'暖心共情者', color:'#E08E45', feature:'眼角有小星星', motto:'我懂你的感觉。' },
+  balanced:{ key:'balanced', name:'全能安澜使', color:'#16A085', feature:'水光环环绕全身', motto:'我们一起出发吧！' }
+};
+
+/* 创作方式推荐库 */
+var RECOMMENDS={
+  engineering:[
+    { name:'动手搭建 · 水工模型 / 纸船', how:['找一找家里的吸管和纸盒','照着南旺分水或虹桥的样子搭一个','放到水里试试，看水怎么流'] , time:'约 40 分钟' },
+    { name:'工程图纸绘画', how:['画一张你的「运河工程图」','标出闸、坝、分水口','写上每个部件的作用'], time:'约 30 分钟' },
+    { name:'运河小实验 · 澳闸循环', how:['用两个小盆当「上澳」「下澳」','中间放一个杯子当「闸室」','用小勺把水舀回上盆，演示水循环'], time:'约 20 分钟' }
+  ],
+  history:[
+    { name:'编年史连环画', how:['把纸折成 4 格','一格里画一个朝代的大运河','用一句话写下这一格的故事'], time:'约 35 分钟' },
+    { name:'讲一个穿越故事', how:['想象你坐着时间船去古代','选一个朝代当第一站','把你看到的讲给家人听'], time:'约 20 分钟' },
+    { name:'时间轴手账', how:['画一条长长的横向时间轴','把 605 年、1128 年等大事标上去','贴上你画的小插图'], time:'约 30 分钟' }
+  ],
+  management:[
+    { name:'漕运小剧场 · 角色扮演', how:['你演漕运总督，家人演运丁','排一遍「征粮—过淮—抵京」','最后开个「庆功宴」'], time:'约 30 分钟' },
+    { name:'设计一套漕运规矩', how:['写出 3 条运粮必须遵守的规矩','想想为什么要这样规定','画成一张「告示」'], time:'约 25 分钟' },
+    { name:'棋类规则游戏', how:['在一张纸上画格子当运河','定一个「谁的粮先到京城」的规则','和家人轮流走棋'], time:'约 30 分钟' }
+  ],
+  life:[
+    { name:'画下和灵宠的第一次见面', how:['准备一张纸和彩笔','先画你的灵宠','再画你俩在做的事'], time:'约 25 分钟' },
+    { name:'给运丁写一封信', how:['想一句最想对运丁说的话','把它写成短短的一封信','读给家人听'], time:'约 20 分钟' },
+    { name:'编一首运河号子唱出来', how:['想一句有力的号子词','配上拍手或跺脚的节奏','边走边唱试试看'], time:'约 15 分钟' }
+  ]
+};
+
+/* 基础形态（影响初始外观与配色） */
+var BASE_FORMS=[
+  { key:'fish', name:'水灵鱼', desc:'圆嘟嘟的小鱼，尾巴像扇子', color:'#2E86C1' },
+  { key:'dragon', name:'漕运小龙', desc:'带角的小龙，鳞片亮亮的', color:'#16A085' },
+  { key:'lamp', name:'河灯灵', desc:'河灯化成的精灵，暖洋洋的', color:'#E08E45' }
+];
+var FORM_BY_KEY={}; BASE_FORMS.forEach(function(f){ FORM_BY_KEY[f.key]=f; });
+
+var STAGE_INFO=[
+  { min:0, name:'漕灵珠', desc:'一颗带水纹的发光珠子，刚刚苏醒' },
+  { min:80, name:'小漕鱼', desc:'长出尾巴的小鱼，会围着你游来游去' },
+  { min:200, name:'漕运小龙', desc:'长出小角与鳞片，神气起来啦' },
+  { min:360, name:'安澜同行', desc:'长出水光翅膀，可以和你并肩飞行' },
+  { min:520, name:'大运河守护灵', desc:'头戴漕运小冠，周身水环，可呼风唤雨' }
+];
+function stageFor(e){ var s=0; for(var i=0;i<STAGE_INFO.length;i++){ if(e>=STAGE_INFO[i].min) s=i; } return s; }
+
+/* ============================================================
+ * 3. 状态层
+ * ============================================================ */
+var SAVE_KEY='canalCommander_v1';
+var state=null;
+
+function defaultState(){
+  return {
+    commander:'', petName:'漕灵', baseForm:'fish',
+    energy:0, completed:{}, tasks:{}, attempts:{}, introDone:{},
+    ask:[], choiceCreation:null, chosenName:null,
+    reportSeen:false, startTime:Date.now(), finishTime:null, log:[]
+  };
+}
+function loadState(){
+  try{
+    var raw=localStorage.getItem(SAVE_KEY);
+    if(raw){ var o=JSON.parse(raw); if(o&&typeof o==='object'){
+      var d=defaultState(); for(var k in d){ if(!(k in o)) o[k]=d[k]; }
+      if(!o.log) o.log=[]; if(!o.tasks) o.tasks={}; if(!o.completed) o.completed={};
+      if(!o.introDone) o.introDone={}; if(!o.ask) o.ask=[];
+      return o;
+    } }
+  }catch(e){}
+  return defaultState();
+}
+function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }
+function resetState(){
+  state=defaultState(); saveState();
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+}
+function log(event){
+  event.t=Date.now();
+  if(event.durationSec==null) event.durationSec=null;
+  if(event.energy==null) event.energy=0;
+  if(event.textLen==null) event.textLen=0;
+  state.log.push(event);
+  saveState();
+}
+function completedCount(){ var n=0; ARTIFACTS.forEach(function(a){ if(state.completed[a.id]) n++; }); return n; }
+
+/* ============================================================
+ * 4. 文物 & 灵宠 SVG 生成
+ * ============================================================ */
+var ART_SVG={
+  dun:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="铜错红铜敦示意图：三足圆腹、双耳带盖的青铜盛食器">'+
+      '<defs><linearGradient id="gDun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6BE84"/><stop offset="1" stop-color="#B07C38"/></linearGradient></defs>'+
+      '<ellipse cx="100" cy="152" rx="62" ry="8" fill="#14313D" opacity=".08"/>'+
+      '<path d="M100 34 C56 34 44 62 48 92 C52 124 74 142 100 142 C126 142 148 124 152 92 C156 62 144 34 100 34 Z" fill="url(#gDun)" stroke="#7A5424" stroke-width="3"/>'+
+      '<path d="M50 64 Q100 54 150 64" fill="none" stroke="#7A5424" stroke-width="2.5"/>'+
+      '<path d="M48 96 Q100 106 152 96" fill="none" stroke="#7A5424" stroke-width="2.5"/>'+
+      '<g stroke="#8C5A22" stroke-width="2" fill="none">'+
+        '<path d="M58 74 q6 -6 12 0 q-6 6 -12 0"/>'+
+        '<path d="M78 72 q6 -6 12 0 q-6 6 -12 0"/>'+
+        '<path d="M98 71 q6 -6 12 0 q-6 6 -12 0"/>'+
+        '<path d="M118 72 q6 -6 12 0 q-6 6 -12 0"/>'+
+      '</g>'+
+      '<path d="M62 44 C74 24 126 24 138 44" fill="none" stroke="#7A5424" stroke-width="3"/>'+
+      '<circle cx="100" cy="28" r="6" fill="#C8963E" stroke="#7A5424" stroke-width="2"/>'+
+      '<g stroke="#7A5424" stroke-width="3" fill="none">'+
+        '<circle cx="44" cy="80" r="9"/><circle cx="156" cy="80" r="9"/>'+
+      '</g>'+
+      '<g fill="#9A6A2C" stroke="#7A5424" stroke-width="2.5">'+
+        '<rect x="58" y="136" width="13" height="20" rx="4"/>'+
+        '<rect x="129" y="136" width="13" height="20" rx="4"/>'+
+        '<rect x="93" y="139" width="14" height="19" rx="4"/>'+
+      '</g>'+
+      '</svg>';
+  },
+  hu:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="隋青釉双龙柄盘口壶示意图：两条龙自肩部向上，龙口紧衔盘口">'+
+      '<defs><linearGradient id="gHu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DDEFF2"/><stop offset="1" stop-color="#8FBBC9"/></linearGradient></defs>'+
+      '<ellipse cx="100" cy="154" rx="58" ry="8" fill="#14313D" opacity=".08"/>'+
+      '<path d="M78 56 C60 60 52 74 50 96 C48 122 66 146 100 146 C134 146 152 122 150 96 C148 74 140 60 122 56 Z" fill="url(#gHu)" stroke="#4C7C8C" stroke-width="3"/>'+
+      '<path d="M74 50 L126 50 L134 36 L66 36 Z" fill="url(#gHu)" stroke="#4C7C8C" stroke-width="3"/>'+
+      '<path d="M64 34 Q100 24 136 34" fill="none" stroke="#4C7C8C" stroke-width="3"/>'+
+      '<path d="M66 36 Q100 28 134 36" fill="#BEE3F0" stroke="#4C7C8C" stroke-width="2"/>'+
+      /* 双龙 */
+      '<path d="M78 62 C58 74 58 44 74 40 C84 37 88 44 82 48" fill="none" stroke="#2E7D6E" stroke-width="4.5" stroke-linecap="round"/>'+
+      '<path d="M122 62 C142 74 142 44 126 40 C116 37 112 44 118 48" fill="none" stroke="#2E7D6E" stroke-width="4.5" stroke-linecap="round"/>'+
+      '<path d="M82 48 l-11 -4 M82 48 l-3 -11" stroke="#20695C" stroke-width="3" stroke-linecap="round"/>'+
+      '<path d="M118 48 l11 -4 M118 48 l3 -11" stroke="#20695C" stroke-width="3" stroke-linecap="round"/>'+
+      '<g fill="#8FBBC9" stroke="#4C7C8C" stroke-width="1.6">'+
+        '<circle cx="70" cy="86" r="3"/><circle cx="132" cy="86" r="3"/><circle cx="66" cy="104" r="3"/><circle cx="136" cy="104" r="3"/>'+
+        '<circle cx="72" cy="122" r="3"/><circle cx="130" cy="122" r="3"/><circle cx="82" cy="134" r="3"/><circle cx="120" cy="134" r="3"/>'+
+      '</g>'+
+      '<path d="M88 70 Q100 78 112 70" fill="none" stroke="#6FA3B3" stroke-width="2"/>'+
+      '</svg>';
+  },
+  poumian:function(){
+    var layers=[
+      ['#E4C58B','#C9A45F'],['#D9E6C8','#B7CD9E'],['#F3DFA6','#DCC072'],['#CFE3D0','#A9C7AC'],['#E8D3B0','#CBB088']
+    ];
+    var rects='';
+    for(var i=0;i<layers.length;i++){
+      var y=34+i*21;
+      rects+='<rect x="24" y="'+y+'" width="152" height="21" fill="url(#gL'+i+')"/>'+
+        '<path d="M24 '+(y+21)+' q38 6 76 0 q38 -6 76 0" fill="none" stroke="#8A7A5A" stroke-width="1.6" opacity=".7"/>';
+    }
+    var defs='<defs>';
+    for(var j=0;j<layers.length;j++){
+      defs+='<linearGradient id="gL'+j+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+layers[j][0]+'"/><stop offset="1" stop-color="'+layers[j][1]+'"/></linearGradient>';
+    }
+    defs+='</defs>';
+    var grid='';
+    for(var k=1;k<5;k++){ grid+='<line x1="'+(24+k*30.4)+'" y1="34" x2="'+(24+k*30.4)+'" y2="139" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3" opacity=".8"/>'; }
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="汴河剖面示意图：横宽二十五点七米、纵高八米的河道地层剖面，层理清晰">'+defs+
+      '<rect x="22" y="32" width="156" height="109" fill="#fff"/>'+rects+grid+
+      '<rect x="22" y="32" width="156" height="109" fill="none" stroke="#8A6F45" stroke-width="3"/>'+
+      '<path d="M24 122 Q60 130 100 124 Q140 118 176 126" fill="none" stroke="#fff" stroke-width="4"/>'+
+      '<text x="100" y="158" text-anchor="middle" font-size="12" fill="#4A6A78">宽 25.7 米 · 高 8 米 · 180 余片</text>'+
+      '<path d="M176 60 l10 0 M181 56 l5 4 l-5 4" stroke="#C0392B" stroke-width="2.2" fill="none"/>'+
+      '</svg>';
+  },
+  nanwang:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="南旺分水枢纽示意图：T字形水口，七分向北、三分向南">'+
+      '<rect x="24" y="28" width="152" height="118" rx="10" fill="#EAF4F8" stroke="#BEE3F0" stroke-width="2"/>'+
+      '<path d="M100 100 L100 40" stroke="#2E86C1" stroke-width="10" stroke-linecap="round" opacity=".85"/>'+
+      '<path d="M100 100 L42 132" stroke="#2E86C1" stroke-width="8" stroke-linecap="round" opacity=".7"/>'+
+      '<path d="M100 100 L158 132" stroke="#2E86C1" stroke-width="6" stroke-linecap="round" opacity=".55"/>'+
+      '<path d="M100 100 m0 0" stroke="#1B5E8A"/>'+
+      '<circle cx="100" cy="100" r="11" fill="#fff" stroke="#1B5E8A" stroke-width="3"/>'+
+      '<path d="M100 96 l7 -20 l-5 0 l8 -16 l3 16 l5 0 l-8 20 z" fill="#C8963E" stroke="#8A6420" stroke-width="1.6"/>'+
+      '<text x="100" y="122" text-anchor="middle" font-size="11" fill="#4A6A78">南旺分水口</text>'+
+      '<text x="82" y="70" text-anchor="middle" font-size="12" fill="#1B5E8A" font-weight="bold">7 分</text>'+
+      '<text x="138" y="122" text-anchor="middle" font-size="11" fill="#1B5E8A">3 分</text>'+
+      '<text x="100" y="40" text-anchor="middle" font-size="11" fill="#8A6420">朝天子</text>'+
+      '<text x="150" y="146" text-anchor="middle" font-size="10.5" fill="#4A6A78">下江南</text>'+
+      '<path d="M100 44 l0 -8 m-4 4 l4 -4 l4 4" stroke="#C8963E" stroke-width="2" fill="none"/>'+
+      '</svg>';
+  },
+  changan:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="长安闸示意图：船闸两侧设上澳与下澳，用水车把水送回上澳循环使用">'+
+      '<rect x="20" y="40" width="52" height="70" rx="8" fill="#BEE3F0" stroke="#2E86C1" stroke-width="2.5"/>'+
+      '<text x="46" y="80" text-anchor="middle" font-size="12" fill="#1B5E8A">上澳</text>'+
+      '<rect x="128" y="40" width="52" height="70" rx="8" fill="#BEE3F0" stroke="#2E86C1" stroke-width="2.5"/>'+
+      '<text x="154" y="80" text-anchor="middle" font-size="12" fill="#1B5E8A">下澳</text>'+
+      '<rect x="80" y="52" width="40" height="46" rx="6" fill="#EAF4F8" stroke="#1B5E8A" stroke-width="2.5"/>'+
+      '<text x="100" y="80" text-anchor="middle" font-size="11" fill="#1B5E8A">闸室</text>'+
+      '<path d="M72 64 l8 0 m-8 22 l8 0" stroke="#2E86C1" stroke-width="2"/>'+
+      '<path d="M120 64 l8 0 m-8 22 l8 0" stroke="#2E86C1" stroke-width="2"/>'+
+      '<path d="M72 68 l8 4 l-8 4 z" fill="#2E86C1"/><path d="M120 68 l8 4 l-8 4 z" fill="#2E86C1"/>'+
+      '<path d="M132 120 Q100 142 68 120" fill="none" stroke="#C8963E" stroke-width="3" stroke-dasharray="6 4"/>'+
+      '<path d="M68 120 l-6 -2 l3 6 z" fill="#C8963E"/>'+
+      '<text x="100" y="152" text-anchor="middle" font-size="10.5" fill="#8A6420">水车送回上澳 · 水循环使用</text>'+
+      '<text x="100" y="30" text-anchor="middle" font-size="12" fill="#4A6A78">北宋崇宁二年（1103 年）· 澳闸</text>'+
+      '</svg>';
+  },
+  hongqiao:function(){
+    var beams='';
+    for(var i=0;i<7;i++){
+      var x=34+i*19;
+      beams+='<path d="M'+x+' 118 L'+(x+60)+' 66" stroke="#B07C38" stroke-width="4" stroke-linecap="round"/>';
+    }
+    var beams2='';
+    for(var j=0;j<7;j++){
+      var x2=34+j*19;
+      beams2+='<path d="M'+(x2+60)+' 118 L'+(x2)+' 66" stroke="#8A5A22" stroke-width="4" stroke-linecap="round"/>';
+    }
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="汴水虹桥示意图：无桥柱的木拱桥，木梁相互编织叠压">'+
+      '<path d="M14 132 Q100 150 186 132" fill="none" stroke="#7FB6D4" stroke-width="6" opacity=".6"/>'+
+      '<path d="M24 122 Q100 58 176 122" fill="none" stroke="#BEE3F0" stroke-width="14" opacity=".5"/>'+beams+beams2+
+      '<path d="M24 122 Q100 66 176 122" fill="none" stroke="#8A5A22" stroke-width="3.5"/>'+
+      '<path d="M30 118 Q100 74 170 118" fill="none" stroke="#B07C38" stroke-width="3"/>'+
+      '<rect x="18" y="120" width="16" height="14" rx="3" fill="#9A6A2C"/>'+
+      '<rect x="166" y="120" width="16" height="14" rx="3" fill="#9A6A2C"/>'+
+      '<text x="100" y="152" text-anchor="middle" font-size="11" fill="#4A6A78">不用榫卯 · 不用桥柱</text>'+
+      '</svg>';
+  },
+  gongshu:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="总督漕运公署复原示意图：多进院落、飞檐屋顶的官署建筑群">'+
+      '<rect x="16" y="138" width="168" height="10" rx="3" fill="#D9C9A8"/>'+
+      '<g>'+
+        '<path d="M40 96 L100 74 L160 96 Z" fill="#8A3B33" stroke="#6B2A24" stroke-width="2"/>'+
+        '<rect x="46" y="96" width="108" height="42" fill="#F3E9D6" stroke="#8A6F45" stroke-width="2"/>'+
+        '<g fill="#B07C38"><rect x="56" y="104" width="10" height="34"/><rect x="95" y="104" width="10" height="34"/><rect x="134" y="104" width="10" height="34"/></g>'+
+        '<rect x="88" y="112" width="24" height="26" fill="#8A3B33" rx="2"/>'+
+      '</g>'+
+      '<g transform="translate(0,-4)">'+
+        '<path d="M30 60 L70 46 L110 60 Z" fill="#A2473C" stroke="#6B2A24" stroke-width="2"/>'+
+        '<rect x="36" y="60" width="68" height="26" fill="#F3E9D6" stroke="#8A6F45" stroke-width="1.8"/>'+
+        '<path d="M112 60 L146 48 L180 60 Z" fill="#A2473C" stroke="#6B2A24" stroke-width="2"/>'+
+        '<rect x="117" y="60" width="58" height="26" fill="#F3E9D6" stroke="#8A6F45" stroke-width="1.8"/>'+
+      '</g>'+
+      '<circle cx="100" cy="70" r="7" fill="#C8963E" stroke="#8A6420" stroke-width="1.6"/>'+
+      '<text x="100" y="164" text-anchor="middle" font-size="10.5" fill="#4A6A78">明万历七年（1579 年）· 占地约 3 万平方米</text>'+
+      '</svg>';
+  },
+  buzi:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="平金银绣锦鸡纹二品文官补子示意图：方形补子，右上角红日，锦鸡立于海水江崖之上">'+
+      '<rect x="46" y="12" width="108" height="112" rx="6" fill="#F5EFE0" stroke="#8A6F45" stroke-width="2.5"/>'+
+      '<rect x="52" y="18" width="96" height="100" rx="4" fill="none" stroke="#C8963E" stroke-width="1.8"/>'+
+      '<path d="M60 12 L60 124" stroke="#C0392B" stroke-width="1.4" opacity=".6"/>'+
+      '<circle cx="72" cy="36" r="9" fill="#C0392B"/>'+
+      '<g stroke="#C8963E" stroke-width="1.4" fill="none" opacity=".8"><path d="M96 30 q8 -6 16 0"/><path d="M118 44 q8 -6 16 0"/></g>'+
+      '<g transform="translate(100,74)">'+
+        '<ellipse cx="0" cy="8" rx="16" ry="24" fill="#C8963E" opacity=".22"/>'+
+        '<path d="M-4 30 C-16 18 -14 -6 0 -18 C12 -8 16 14 4 30 Z" fill="#B24A3A" stroke="#8A3B33" stroke-width="1.6"/>'+
+        '<path d="M0 -18 C-4 -30 4 -34 8 -28 C6 -22 2 -20 0 -18 Z" fill="#8A3B33"/>'+
+        '<circle cx="3" cy="-26" r="2.4" fill="#fff"/>'+
+        '<path d="M4 30 q18 4 16 -14 q-8 6 -16 4 z" fill="#8A3B33"/>'+
+        '<path d="M-14 6 q-12 -4 -16 6 q10 4 16 -2 z" fill="#C8963E"/>'+
+      '</g>'+
+      '<path d="M46 108 q26 10 54 0 q28 -10 54 0 L154 124 L46 124 Z" fill="#7FB6D4" opacity=".55"/>'+
+      '<path d="M46 108 q26 10 54 0 q28 -10 54 0" fill="none" stroke="#4C7C8C" stroke-width="1.6"/>'+
+      '<text x="100" y="146" text-anchor="middle" font-size="11" fill="#4A6A78">二品文官 · 锦鸡 · 漕运总督正二品</text>'+
+      '<text x="100" y="162" text-anchor="middle" font-size="10" fill="#8A6420">左为对开的前胸半块</text>'+
+      '</svg>';
+  },
+  yanpan:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="煎盐盘铁示意图：由多块铁板拼接而成的煎盐大铁盘，下方以柴火煎烧">'+
+      '<g fill="#9AA7AE" stroke="#5C6A72" stroke-width="2.4">'+
+        '<path d="M26 78 L74 66 L96 84 L50 98 Z"/>'+
+        '<path d="M96 84 L74 66 L122 56 L142 74 Z"/>'+
+        '<path d="M142 74 L122 56 L170 66 L178 86 Z"/>'+
+        '<path d="M50 98 L96 84 L142 74 L178 86 L140 108 L74 112 Z"/>'+
+      '</g>'+
+      '<g stroke="#5C6A72" stroke-width="1.4" stroke-dasharray="4 3" fill="none"><path d="M74 66 L74 112"/><path d="M96 84 L142 74"/><path d="M122 56 L140 108"/></g>'+
+      '<g fill="#E08E45" stroke="#C0392B" stroke-width="1.6">'+
+        '<path d="M62 122 q6 -14 12 0 q6 -14 12 0 q-6 10 -12 16 q-6 -6 -12 -16 z"/>'+
+        '<path d="M104 124 q6 -14 12 0 q6 -14 12 0 q-6 10 -12 16 q-6 -6 -12 -16 z"/>'+
+      '</g>'+
+      '<text x="100" y="158" text-anchor="middle" font-size="10.5" fill="#4A6A78">每户各保管一角 · 拼合才能煎盐</text>'+
+      '</svg>';
+  },
+  bian:function(){
+    return '<svg viewBox="0 0 200 170" class="art-svg" role="img" aria-label="庆云楼匾额示意图：横长方形木质匾额，上书庆云楼三字，四周有回纹边框">'+
+      '<rect x="16" y="48" width="168" height="66" rx="6" fill="#5A3A22" stroke="#3E2716" stroke-width="3"/>'+
+      '<rect x="24" y="56" width="152" height="50" rx="4" fill="#8A5A2B" stroke="#C8963E" stroke-width="2"/>'+
+      '<g fill="#F3E2B8" font-size="34" font-weight="bold" text-anchor="middle" font-family="inherit">'+
+        '<text x="60" y="94">庆</text><text x="100" y="94">云</text><text x="140" y="94">楼</text>'+
+      '</g>'+
+      '<g stroke="#C8963E" stroke-width="2" fill="none"><path d="M24 108 l8 -8 M40 108 l8 -8 M56 108 l8 -8 M72 108 l8 -8 M88 108 l8 -8 M104 108 l8 -8 M120 108 l8 -8 M136 108 l8 -8 M152 108 l8 -8 M168 108 l8 -8"/></g>'+
+      '<path d="M40 128 L160 128" stroke="#B07C38" stroke-width="4"/>'+
+      '<text x="100" y="150" text-anchor="middle" font-size="10.5" fill="#4A6A78">清道光年间 · 北京什刹海烟袋斜街</text>'+
+      '</svg>';
+  }
+};
+function artSVG(key){ return (ART_SVG[key]||ART_SVG.dun)(); }
+
+/* ---------- 灵宠 SVG ---------- */
+function petSVG(stage, color, opts){
+  opts=opts||{};
+  var c=color||'#2E86C1';
+  var dark=shade(c,-38), light=shade(c,42);
+  var id='p'+(stage)+Math.random().toString(36).slice(2,7);
+  var s='<svg viewBox="0 0 120 120" role="img" aria-label="灵宠：'+STAGE_INFO[clamp(stage,0,4)].name+'">';
+  s+='<defs>'+
+     '<radialGradient id="b'+id+'" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="'+light+'"/><stop offset="1" stop-color="'+c+'"/></radialGradient>'+
+     '<radialGradient id="gl'+id+'" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="'+c+'" stop-opacity=".45"/><stop offset="1" stop-color="'+c+'" stop-opacity="0"/></radialGradient>'+
+     '</defs>';
+  if(stage===0){
+    s+='<circle cx="60" cy="60" r="44" fill="url(#gl'+id+')"><animate attributeName="r" values="40;48;40" dur="2.6s" repeatCount="indefinite"/></circle>';
+    s+='<circle cx="60" cy="60" r="26" fill="url(#b'+id+')" stroke="'+dark+'" stroke-width="2.5"><animate attributeName="r" values="25;27;25" dur="2.8s" repeatCount="indefinite"/></circle>';
+    s+='<path d="M42 60 q6 -7 12 0 q6 7 12 0 q6 -7 12 0" fill="none" stroke="#fff" stroke-width="2.2" opacity=".85"/>';
+    s+='<path d="M48 72 q6 6 12 0 q6 -6 12 0" fill="none" stroke="#fff" stroke-width="2" opacity=".6"/>';
+    s+='<circle cx="52" cy="54" r="3.6" fill="#fff" opacity=".9"><animate attributeName="opacity" values=".9;.4;.9" dur="2.2s" repeatCount="indefinite"/></circle>';
+    s+='</svg>';
+    return s;
+  }
+  /* 身体 */
+  var body='<ellipse cx="58" cy="66" rx="30" ry="24" fill="url(#b'+id+')" stroke="'+dark+'" stroke-width="2.5"><animate attributeName="ry" values="24;25.5;24" dur="3s" repeatCount="indefinite"/></ellipse>';
+  /* 尾巴 */
+  var tail='<path d="M86 66 q20 -16 26 -6 q-14 4 -18 18 q10 -4 16 4 q-16 8 -26 -2 z" fill="'+c+'" stroke="'+dark+'" stroke-width="2" opacity=".95"><animateTransform attributeName="transform" type="rotate" values="-7 86 66;9 86 66;-7 86 66" dur="1.9s" repeatCount="indefinite"/></path>';
+  /* 眼 */
+  var eye='<circle cx="46" cy="60" r="6.5" fill="#fff"/><circle cx="45" cy="60" r="3.4" fill="#14313D"/><circle cx="46.5" cy="58.5" r="1.2" fill="#fff"/>';
+  /* 嘴 */
+  var mouth='<path d="M36 72 q5 5 10 1" fill="none" stroke="'+dark+'" stroke-width="2" stroke-linecap="round"/>';
+  var extra='';
+  if(stage>=2){
+    /* 角 */
+    extra+='<path d="M44 44 l-6 -14 l6 4 l4 -10 l4 12 l6 -3 l-6 12 z" fill="'+light+'" stroke="'+dark+'" stroke-width="1.8"/>';
+    /* 鳞 */
+    var sc='';
+    for(var i=0;i<3;i++) for(var j=0;j<2;j++){ sc+='<path d="M'+(52+i*11)+' '+(74+j*11)+' q5 -5 10 0" fill="none" stroke="'+dark+'" stroke-width="1.4" opacity=".55"/>'; }
+    extra+=sc;
+  }
+  if(stage>=3){
+    /* 水光翅膀 */
+    extra+='<path d="M42 58 q-26 -22 -34 -4 q16 0 26 16 z" fill="'+light+'" opacity=".6" stroke="'+dark+'" stroke-width="1.4"><animateTransform attributeName="transform" type="rotate" values="0 42 58;-10 42 58;0 42 58" dur="1.7s" repeatCount="indefinite"/></path>';
+    extra+='<path d="M76 58 q26 -22 34 -4 q-16 0 -26 16 z" fill="'+light+'" opacity=".6" stroke="'+dark+'" stroke-width="1.4"><animateTransform attributeName="transform" type="rotate" values="0 76 58;10 76 58;0 76 58" dur="1.7s" repeatCount="indefinite"/></path>';
+    /* 水光环 */
+    extra+='<ellipse cx="58" cy="66" rx="46" ry="14" fill="none" stroke="'+c+'" stroke-width="2" stroke-dasharray="7 6" opacity=".55"><animateTransform attributeName="transform" type="rotate" values="0 58 66;360 58 66" dur="7s" repeatCount="indefinite"/></ellipse>';
+  }
+  if(stage>=4){
+    /* 漕运官帽式小冠 */
+    extra+='<g><rect x="44" y="30" width="28" height="8" rx="3" fill="'+dark+'"/>'+
+      '<path d="M50 30 q8 -16 16 0 z" fill="#C0392B" stroke="#8A2A20" stroke-width="1.4"/>'+
+      '<circle cx="58" cy="24" r="3.4" fill="#C8963E"/></g>';
+    /* 呼风唤雨纹 */
+    extra+='<g stroke="#2E86C1" stroke-width="2.2" fill="none" opacity=".75">'+
+      '<path d="M14 34 q8 -6 16 0 q8 6 16 0"><animate attributeName="opacity" values=".8;.25;.8" dur="2.2s" repeatCount="indefinite"/></path>'+
+      '<path d="M76 26 q8 -6 16 0 q8 6 16 0"><animate attributeName="opacity" values=".25;.8;.25" dur="2.2s" repeatCount="indefinite"/></path></g>';
+  }
+  /* 性格特征叠加 */
+  var feat='';
+  if(opts.persona==='engineering'){
+    feat+='<g stroke="'+dark+'" stroke-width="1.6" fill="none" opacity=".85"><circle cx="86" cy="80" r="5"/><circle cx="86" cy="80" r="2"/><path d="M86 73 v-3 M86 90 v3 M79 80 h-3 M93 80 h3"/></g>';
+  }else if(opts.persona==='history'){
+    feat+='<g stroke="'+dark+'" stroke-width="1.4" fill="none" opacity=".8"><path d="M52 84 q6 -5 12 0 q6 5 12 0"/><path d="M52 90 q6 -5 12 0 q6 5 12 0"/></g>';
+  }else if(opts.persona==='management'){
+    feat+='<path d="M46 42 q12 -12 24 0 z" fill="#C0392B" stroke="#8A2A20" stroke-width="1.4"/>';
+  }else if(opts.persona==='life'){
+    feat+='<g fill="#C8963E"><path d="M40 54 l1.8 4 l4 1.8 l-4 1.8 l-1.8 4 l-1.8 -4 l-4 -1.8 l4 -1.8 z"/><path d="M52 52 l1.4 3 l3 1.4 l-3 1.4 l-1.4 3 l-1.4 -3 l-3 -1.4 l3 -1.4 z"/></g>';
+  }else if(opts.persona==='balanced'){
+    feat+='<ellipse cx="58" cy="66" rx="52" ry="18" fill="none" stroke="#16A085" stroke-width="2.4" stroke-dasharray="4 7" opacity=".7"><animateTransform attributeName="transform" type="rotate" values="0 58 66;-360 58 66" dur="9s" repeatCount="indefinite"/></ellipse>';
+  }
+  s+=body+tail+eye+mouth+extra+feat+'</svg>';
+  return s;
+}
+function shade(hex,percent){
+  hex=String(hex).replace('#','');
+  if(hex.length===3) hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  var num=parseInt(hex,16);
+  var r=(num>>16)&255, g=(num>>8)&255, b=num&255;
+  r=clamp(Math.round(r+(percent/100)*255),0,255);
+  g=clamp(Math.round(g+(percent/100)*255),0,255);
+  b=clamp(Math.round(b+(percent/100)*255),0,255);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+function petColor(){
+  var f=FORM_BY_KEY[state.baseForm]||BASE_FORMS[0];
+  if(state.choiceCreation && state.personality){
+    var p=PERSONALITIES[state.personality];
+    if(p) return p.color;
+  }
+  return f.color;
+}
+function currentPersona(){ return state.personality && PERSONALITIES[state.personality] ? state.personality : null; }
+
+/* ---------- 安澜 & 指挥官 SVG ---------- */
+function anlanSVG(){
+  return '<svg viewBox="0 0 120 120" width="100%" height="100%" role="img" aria-label="小河灵安澜：水蓝色的小精灵">'+
+    '<defs><radialGradient id="gAn" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#CFF3EA"/><stop offset="1" stop-color="#2E9C86"/></radialGradient></defs>'+
+    '<ellipse cx="60" cy="104" rx="30" ry="7" fill="#5CC6B4" opacity=".25"/>'+
+    '<path d="M60 16 C44 16 34 30 34 46 C34 58 40 66 40 74 C40 84 48 92 60 92 C72 92 80 84 80 74 C80 66 86 58 86 46 C86 30 76 16 60 16 Z" fill="url(#gAn)" stroke="#1B7A68" stroke-width="2.5"/>'+
+    '<path d="M60 12 C54 22 50 26 50 32 C50 38 54 42 60 42 C66 42 70 38 70 32 C70 26 66 22 60 12 Z" fill="#2E9C86" stroke="#1B7A68" stroke-width="1.6"/>'+
+    '<circle cx="50" cy="52" r="6.5" fill="#fff"/><circle cx="49" cy="52" r="3.4" fill="#14313D"/><circle cx="50.5" cy="50.5" r="1.2" fill="#fff"/>'+
+    '<circle cx="70" cy="52" r="6.5" fill="#fff"/><circle cx="69" cy="52" r="3.4" fill="#14313D"/><circle cx="70.5" cy="50.5" r="1.2" fill="#fff"/>'+
+    '<path d="M52 66 q8 8 16 0" fill="none" stroke="#1B7A68" stroke-width="2.4" stroke-linecap="round"/>'+
+    '<circle cx="42" cy="62" r="4.5" fill="#F49C9C" opacity=".6"/><circle cx="78" cy="62" r="4.5" fill="#F49C9C" opacity=".6"/>'+
+    '<path d="M92 40 q10 2 12 10 q-10 2 -14 -6 z" fill="#BEE3F0" stroke="#1B7A68" stroke-width="1.4"/>'+
+    '</svg>';
+}
+function commanderSVG(){
+  return '<svg viewBox="0 0 100 100" width="100%" height="100%" role="img" aria-label="漕运指挥官徽章：小头盔、令旗与水纹披风">'+
+    '<path d="M50 8 L88 26 L50 44 L12 26 Z" fill="#C0392B" stroke="#8A2A20" stroke-width="2.4"/>'+
+    '<circle cx="50" cy="26" r="5" fill="#C8963E" stroke="#8A6420" stroke-width="1.6"/>'+
+    '<path d="M28 30 C28 52 40 62 50 62 C60 62 72 52 72 30" fill="#F3E9D6" stroke="#8A6F45" stroke-width="2.2"/>'+
+    '<circle cx="41" cy="44" r="4.4" fill="#14313D"/><circle cx="59" cy="44" r="4.4" fill="#14313D"/>'+
+    '<path d="M44 54 q6 5 12 0" fill="none" stroke="#8A6F45" stroke-width="2"/>'+
+    '<path d="M28 62 q22 16 44 0 q10 14 -4 22 q-18 10 -36 0 q-14 -8 -4 -22 z" fill="#2E86C1" stroke="#1B5E8A" stroke-width="2.2"/>'+
+    '<path d="M30 70 q10 6 20 0 q10 -6 20 0" fill="none" stroke="#BEE3F0" stroke-width="2"/>'+
+    '<rect x="78" y="30" width="4" height="34" rx="2" fill="#8A6F45"/>'+
+    '<path d="M82 32 L96 38 L82 44 Z" fill="#C8963E" stroke="#8A6420" stroke-width="1.6"/>'+
+    '</svg>';
+}
+function sealSVG(){
+  return '<svg viewBox="0 0 100 100" role="img" aria-label="大运河博物馆纪念印章"><rect x="8" y="8" width="84" height="84" rx="12" fill="#C0392B" opacity=".92"/><rect x="14" y="14" width="72" height="72" rx="8" fill="none" stroke="#fff" stroke-width="2.5"/><text x="50" y="44" text-anchor="middle" font-size="22" fill="#fff" font-weight="bold">漕运</text><text x="50" y="70" text-anchor="middle" font-size="22" fill="#fff" font-weight="bold">勋章</text></svg>';
+}
+
+/* ============================================================
+ * 5. 屏幕定义
+ * ============================================================ */
+var SCREENS=[]; /* {id,label,navLabel,build} */
+var NAV=[
+  {id:'screen-boot', label:'启程'},
+  {id:'screen-ch1-intro', label:'历史演变'},
+  {id:'screen-ch2-intro', label:'水工智慧'},
+  {id:'screen-ch3-intro', label:'国家管理'},
+  {id:'screen-ch4-intro', label:'生活百态'},
+  {id:'screen-ask', label:'灵宠提问'},
+  {id:'screen-birth', label:'灵宠诞生'},
+  {id:'screen-report', label:'学习报告'}
+];
+
+/* ---------- HUD 渲染 ---------- */
+function renderHUD(){
+  $('#hudCode').textContent=state.commander||'漕运小将';
+  var st=stageFor(state.energy);
+  $('#hudStage').textContent='阶 '+st+' · '+STAGE_INFO[st].name;
+  $('#hudArtifacts').textContent=completedCount()+'/10';
+  $('#energyText').textContent='能量 '+state.energy+' · 灵宠「'+(state.petName||'漕灵')+'」';
+  var pct=clamp(state.energy/600*100,0,100);
+  $('#energyFill').style.width=pct+'%';
+  var persona=currentPersona();
+  $('#hudPet').innerHTML=petSVG(st, petColor(), persona?{persona:persona}:{});
+  $('#commanderBadge').innerHTML=commanderSVG();
+}
+
+/* ---------- 能量/升阶 ---------- */
+function addEnergy(amount, reason){
+  if(!amount) return;
+  var before=stageFor(state.energy);
+  state.energy+=amount;
+  var after=stageFor(state.energy);
+  renderHUD();
+  splashParticles();
+  if(reason){ toast('+' + amount + ' 能量 · ' + reason); }
+  if(after>before){
+    setTimeout(function(){ showLevelUp(after); }, 320);
+  }
+  saveState();
+}
+function showLevelUp(stage){
+  Sound.levelUp();
+  var box=$('#levelupBox');
+  box.innerHTML='<div style="font-size:14px;color:#4A6A78">灵宠成长啦！</div>'+
+    '<div style="width:150px;height:150px;margin:6px auto">'+petSVG(stage,petColor(),currentPersona()?{persona:currentPersona()}:{})+'</div>'+
+    '<div style="font-size:26px;font-weight:900;color:#1B5E8A">第 '+stage+' 阶 · '+STAGE_INFO[stage].name+'</div>'+
+    '<div style="color:#4A6A78;margin:6px 0 12px">'+STAGE_INFO[stage].desc+'</div>'+
+    '<button class="btn jade" id="levelupOk">太棒了，继续探险！</button>';
+  $('#levelupOverlay').classList.add('show');
+  var ok=$('#levelupOk'); if(ok) ok.onclick=function(){ $('#levelupOverlay').classList.remove('show'); Sound.tap(); };
+}
+function splashParticles(){
+  var chars=['💧','✨','🫧','🌟','💠'];
+  for(var i=0;i<7;i++){
+    (function(k){
+      setTimeout(function(){
+        var el=document.createElement('div');
+        el.className='pop-particle';
+        el.textContent=pick(chars);
+        el.style.left=(20+Math.random()*60)+'vw';
+        el.style.top=(46+Math.random()*20)+'vh';
+        document.body.appendChild(el);
+        setTimeout(function(){ el.remove(); },1400);
+      },k*70);
+    })(i);
+  }
+}
+
+/* ============================================================
+ * 6. 任务卡渲染（通用）
+ * ============================================================ */
+/* 判断某小问的作答是否正确（供完成态渲染、重试入口与计分共用） */
+function partIsCorrect(part, ans){
+  if(ans==null) return false;
+  if(part.kind==='choice'){ return !!(part.options[ans] && part.options[ans].correct); }
+  if(part.kind==='multi'){
+    var need=[]; part.options.forEach(function(o,j){ if(o.correct) need.push(j); });
+    return Array.isArray(ans) && ans.length===need.length && need.every(function(n){ return ans.indexOf(n)>-1; });
+  }
+  if(part.kind==='order'){
+    return Array.isArray(ans) && ans.length===part.items.length && ans.every(function(v,k){ return v===part.items[k]; });
+  }
+  if(part.kind==='pair'){ return part.answers.every(function(a,k){ return ans[k]===a; }); }
+  return false;
+}
+/* 某小问已发生的重试次数（尝试序号 = 该值 + 1；仅 retryPart 会自增） */
+function partRetryCount(artId, pi){
+  return (state.attempts && state.attempts[artId] && state.attempts[artId][pi]) || 0;
+}
+/* 坚持力统计（全部来自 state.log，纯记录，不影响能量计分） */
+function persistenceStats(){
+  var answers={};
+  (state.log||[]).forEach(function(e){
+    if(e.type!=='answer') return;
+    var key=e.artifactId+'|'+e.partIndex;
+    (answers[key]=answers[key]||[]).push(e);
+  });
+  var retryCount=0;
+  (state.log||[]).forEach(function(e){ if(e.type==='retry') retryCount++; });
+  var wins=[];
+  Object.keys(answers).forEach(function(key){
+    var seq=answers[key];
+    if(seq.length<2) return;
+    var first=seq[0], last=seq[seq.length-1];
+    if(first.correct===false && last.correct===true){
+      wins.push({ artifactId:first.artifactId, partIndex:first.partIndex, attempts:seq.length, retries:seq.length-1 });
+    }
+  });
+  wins.sort(function(a,b){ return a.attempts-b.attempts; });
+  return { retryCount:retryCount, retryWins:wins.length, wins:wins };
+}
+/* 中文数字（用于「第 N 次」措辞） */
+function cnNum(n){
+  var m=['零','一','二','三','四','五','六','七','八','九','十'];
+  if(n>=0 && n<=10) return m[n];
+  if(n>10 && n<20) return '十'+m[n-10];
+  return String(n);
+}
+/* 温和措辞：不使用「错/差」等贬义标签 */
+function wrongPhrase(part){
+  if(!part) return '第一次没找对';
+  if(part.kind==='pair') return '第一次没配对成功';
+  if(part.kind==='order') return '第一次没排好顺序';
+  return '第一次没选对';
+}
+/* 坚持力统计行（零重试时也安全，不出现 NaN/undefined） */
+function persistLine(ps){
+  ps=ps||persistenceStats();
+  var n=(ps && ps.retryCount)||0, m=(ps && ps.retryWins)||0;
+  if(n<=0) return '坚持力 · 重试 0 次';
+  return '坚持力 · 重试 '+n+' 次 / 其中 '+m+' 次最终答对';
+}
+function renderArtifactTask(art){
+  var saved=state.tasks[art.id]||{};
+  var html='<div class="task-card" data-art="'+art.id+'">';
+  html+='<div class="task-title">📜 '+esc(art.task.title)+'</div>';
+  art.task.parts.forEach(function(part,i){
+    var done=saved.parts && saved.parts[i];
+    var savedAns=saved.answers?saved.answers[i]:null;
+    var allowRetry=!!(done && !partIsCorrect(part,savedAns));
+    html+='<div class="part" data-part="'+i+'">';
+    html+='<div class="part-prompt">'+esc(part.prompt)+'</div>';
+    html+='<div class="part-body">'+renderPartBody(part,i,done,savedAns,allowRetry)+'</div>';
+    html+='<div class="explain '+(done?'show':'')+'">💡 '+esc(part.explain)+'</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+function renderPartBody(part,i,done,ans,allowRetry){
+  var h='';
+  if(part.kind==='choice'||part.kind==='multi'){
+    part.options.forEach(function(o,j){
+      var cls='opt';
+      if(done){
+        if(o.correct) cls+=' ok';
+        else if(ans && (Array.isArray(ans)?ans.indexOf(j)>-1:ans===j)) cls+=' no';
+      }
+      h+='<button class="'+cls+'" '+(done?'disabled':'')+' data-opt="'+j+'">'+
+        '<span class="mark">'+(o.correct&&done?'✓':'')+'</span>'+esc(o.label)+'</button>';
+    });
+    if(!done) h+='<div class="row" style="align-items:center"><button class="btn sm" data-check="'+i+'">核对答案</button>'+
+      (part.kind==='choice' && Voice.sttSupported()? '<button class="btn ghost sm" data-voice="'+i+'">🎤 说一说答案</button>' : '')+'</div>';
+  }else if(part.kind==='order'){
+    if(done){
+      h+='<div class="seq">'+part.items.map(function(it){ return '<span class="chip">'+esc(it)+'</span>'; }).join('')+'</div>';
+      h+='<div class="note">✅ 顺序已核对完成</div>';
+    }else{
+      h+='<div class="seq" data-seq="'+i+'"></div>';
+      h+='<div class="row" data-pool="'+i+'">'+part.items.slice().sort(function(){ return Math.random()-0.5; }).map(function(it){ return '<button class="opt" style="width:auto;margin:0" data-pick="'+esc(it)+'">'+esc(it)+'</button>'; }).join('')+'</div>';
+      h+='<div><button class="btn sm" data-check="'+i+'" style="margin-top:8px">核对顺序</button></div>';
+    }
+  }else if(part.kind==='pair'){
+    part.leftLabels.forEach(function(l,ri){
+      h+='<div class="pair-row"><div>'+esc(l)+'</div><select data-pair="'+ri+'" '+(done?'disabled':'')+'>';
+      h+='<option value="">请选择</option>';
+      part.rightOptions.forEach(function(o,oi){ h+='<option value="'+oi+'">'+esc(o)+'</option>'; });
+      h+='</select></div>';
+    });
+    if(!done) h+='<div><button class="btn sm" data-check="'+i+'">核对配对</button></div>';
+  }
+  if(done && allowRetry){
+    h+='<div style="margin-top:8px"><button class="btn ghost sm" data-retry="'+i+'">🔄 再答一次</button></div>';
+  }
+  return h;
+}
+function setupArtifactTask(art){
+  var root=$('.task-card[data-art="'+art.id+'"]'); if(!root) return;
+  var saved=state.tasks[art.id]||{parts:{}};
+  var local={ sel:{}, order:{}, pair:{}, multi:{} };
+
+  art.task.parts.forEach(function(part,i){
+    var partEl=$('.part[data-part="'+i+'"]',root);
+    if(!partEl) return;
+    var done=saved.parts&&saved.parts[i];
+    if(done){
+      var rtBtn=$('[data-retry="'+i+'"]',partEl);
+      if(rtBtn) rtBtn.onclick=function(){ retryPart(art,i,part,partEl,local,root); };
+      return;
+    }
+    bindPart(art,i,part,partEl,local,root);
+  });
+
+  if(saved.submitted) markTaskDone(art);
+}
+/* 为某个小问绑定交互（首次渲染与「再答一次」重置后共用） */
+function bindPart(art,i,part,partEl,local,root){
+    if(part.kind==='choice'){
+      $$('.opt',partEl).forEach(function(btn){
+        btn.onclick=function(){
+          $$('.opt',partEl).forEach(function(b){ b.classList.remove('sel'); });
+          btn.classList.add('sel'); local.sel[i]=parseInt(btn.getAttribute('data-opt'),10); Sound.tap();
+        };
+      });
+    }else if(part.kind==='multi'){
+      $$('.opt',partEl).forEach(function(btn){
+        btn.onclick=function(){
+          var j=parseInt(btn.getAttribute('data-opt'),10);
+          local.multi[i]=local.multi[i]||[];
+          var idx=local.multi[i].indexOf(j);
+          if(idx>-1){ local.multi[i].splice(idx,1); btn.classList.remove('sel'); }
+          else { local.multi[i].push(j); btn.classList.add('sel'); }
+          Sound.tap();
+        };
+      });
+    }else if(part.kind==='order'){
+      var seq=$('[data-seq="'+i+'"]',partEl);
+      var pool=$('[data-pool="'+i+'"]',partEl);
+      local.order[i]=[];
+      function refreshSeq(){
+        seq.innerHTML=local.order[i].map(function(it,k){ return '<span class="chip" data-idx="'+k+'">'+(k+1)+'. '+esc(it)+'</span>'; }).join('');
+        $$('.chip',seq).forEach(function(ch){ ch.onclick=function(){
+          var k=parseInt(ch.getAttribute('data-idx'),10);
+          var removed=local.order[i].splice(k,1)[0];
+          var backBtn=document.createElement('button');
+          backBtn.className='opt'; backBtn.style.width='auto'; backBtn.style.margin='0'; backBtn.setAttribute('data-pick',removed);
+          backBtn.textContent=removed; bindPick(backBtn); pool.appendChild(backBtn);
+          refreshSeq(); Sound.tap();
+        };});
+      }
+      function bindPick(btn){
+        btn.onclick=function(){
+          local.order[i].push(btn.getAttribute('data-pick'));
+          btn.remove(); refreshSeq(); Sound.tap();
+        };
+      }
+      $$('[data-pick]',pool).forEach(bindPick);
+    }else if(part.kind==='pair'){
+      $$('select[data-pair]',partEl).forEach(function(sel){
+        sel.onchange=function(){ local.pair[i]=local.pair[i]||{}; local.pair[i][parseInt(sel.getAttribute('data-pair'),10)]=parseInt(sel.value,10); Sound.tap(); };
+      });
+    }
+
+    var checkBtn=$('[data-check="'+i+'"]',partEl);
+    if(checkBtn) checkBtn.onclick=function(){ checkPart(art,i,part,partEl,local,root); };
+    var vBtn=$('[data-voice="'+i+'"]',partEl);
+    if(vBtn) vBtn.onclick=function(){ voiceAnswer(art,i,part,partEl,local,root,vBtn); };
+}
+/* 「再答一次」：清空该小问作答并恢复可交互（不改变已发放的能量与完成计数） */
+function retryPart(art,i,part,partEl,local,root){
+  /* 埋点：记录「重试」事件，并在此处（唯一自增点）递增该小问的尝试序号 */
+  var retryAttempt=partRetryCount(art.id,i)+1;
+  log({ type:'retry', artifactId:art.id, partIndex:i, attempt:retryAttempt, dim:art.reward.dim, energy:0 });
+  state.attempts=state.attempts||{};
+  state.attempts[art.id]=state.attempts[art.id]||{};
+  state.attempts[art.id][i]=retryAttempt;
+  if(!state.tasks[art.id]) state.tasks[art.id]={parts:{},answers:{}};
+  delete state.tasks[art.id].parts[i];
+  if(state.tasks[art.id].answers) delete state.tasks[art.id].answers[i];
+  local.sel[i]=undefined; local.multi[i]=[]; local.order[i]=[]; local.pair[i]={};
+  var body=partEl.querySelector('.part-body');
+  if(body) body.outerHTML='<div class="part-body">'+renderPartBody(part,i,false,null)+'</div>';
+  var ex=partEl.querySelector('.explain'); if(ex) ex.classList.remove('show');
+  bindPart(art,i,part,partEl,local,root);
+  saveState(); Sound.tap();
+  toast('再试一次，你一定可以！');
+}
+function checkPart(art,i,part,partEl,local,root){
+  var correct=false, ans=null;
+  if(part.kind==='choice'){
+    ans=local.sel[i];
+    if(ans==null||isNaN(ans)){ toast('先选一个答案吧～'); return; }
+    correct=!!part.options[ans].correct;
+  }else if(part.kind==='multi'){
+    ans=(local.multi[i]||[]).slice();
+    if(!ans.length){ toast('至少选一个哦～'); return; }
+    var need=[]; part.options.forEach(function(o,j){ if(o.correct) need.push(j); });
+    correct=ans.length===need.length && need.every(function(n){ return ans.indexOf(n)>-1; });
+  }else if(part.kind==='order'){
+    ans=(local.order[i]||[]).slice();
+    if(ans.length!==part.items.length){ toast('请把每一项都排进队里～'); return; }
+    correct=ans.every(function(v,k){ return v===part.items[k]; });
+  }else if(part.kind==='pair'){
+    ans=local.pair[i]||{};
+    correct=part.answers.every(function(a,k){ return ans[k]===a; });
+    if(Object.keys(ans).length<part.leftLabels.length){ toast('每一行都要选一个哦～'); return; }
+  }
+
+  /* 保存结果 */
+  state.tasks[art.id]=state.tasks[art.id]||{parts:{},answers:{}};
+  state.tasks[art.id].parts[i]=true;
+  state.tasks[art.id].answers[i]=ans;
+
+  /* 埋点：记录「作答」事件（attempt = 已重试次数 + 1，首次为 1） */
+  log({ type:'answer', artifactId:art.id, partIndex:i, attempt:partRetryCount(art.id,i)+1,
+        correct:correct, dim:art.reward.dim, energy:0 });
+
+  /* 更新 UI：整体替换该小问的交互区，彻底移除旧选项与「核对」按钮，避免重复累积 */
+  var oldBody=partEl.querySelector('.part-body');
+  if(oldBody){ oldBody.outerHTML='<div class="part-body">'+renderPartBody(part,i,true,ans,!correct)+'</div>'; }
+  var ex=partEl.querySelector('.explain'); if(ex) ex.classList.add('show');
+  var rt=$('[data-retry="'+i+'"]',partEl);
+  if(rt) rt.onclick=function(){ retryPart(art,i,part,partEl,local,root); };
+
+  if(correct){
+    Sound.correct(); toast('答对啦！+能量');
+  }else{
+    Sound.gentle(); toast('没关系，看看正确答案～');
+  }
+
+  /* 判断整个任务是否完成 */
+  var allDone=art.task.parts.every(function(_,k){ return state.tasks[art.id].parts[k]; });
+  if(allDone && !state.tasks[art.id].submitted){
+    finishArtifact(art);
+  }
+  saveState();
+}
+function finishArtifact(art){
+  var t=state.tasks[art.id];
+  var total=art.task.parts.length, right=0;
+  art.task.parts.forEach(function(part,i){
+    var ans=t.answers[i];
+    if(part.kind==='choice'){ if(ans!=null && part.options[ans] && part.options[ans].correct) right++; }
+    else if(part.kind==='multi'){ var need=[]; part.options.forEach(function(o,j){ if(o.correct) need.push(j); }); if(ans&&ans.length===need.length&&need.every(function(n){return ans.indexOf(n)>-1;})) right++; }
+    else if(part.kind==='order'){ if(ans && ans.every(function(v,k){ return v===part.items[k]; })) right++; }
+    else if(part.kind==='pair'){ if(ans && part.answers.every(function(a,k){ return ans[k]===a; })) right++; }
+  });
+  t.ratio=right/total; t.submitted=true; t.right=right; t.total=total; t.correct=(right===total);
+  state.completed[art.id]=true;
+
+  var gain=Math.round(art.reward.energy*t.ratio);
+  log({ type:'artifact', artifactId:art.id, dim:art.reward.dim, energy:gain, correct:(right===total), right:right, total:total });
+  addEnergy(gain, art.name+' · 答对 '+right+'/'+total);
+  markTaskDone(art);
+  renderHUD();
+  saveState();
+}
+function markTaskDone(art){
+  var root=$('.task-card[data-art="'+art.id+'"]'); if(!root) return;
+  if(root.getAttribute('data-done')==='1') return;
+  var t=state.tasks[art.id]||{};
+  var b=document.createElement('div');
+  b.className='result-banner show '+(t.correct?'good':'warn');
+  b.textContent=t.correct ? '🎉 任务完成！全部答对，灵宠收到了满满的知识能量！'
+                          : '✅ 任务完成！答对 '+t.right+'/'+t.total+'，安澜说：敢想敢答就很棒！';
+  root.appendChild(b);
+  root.classList.add('done-badge');
+  root.setAttribute('data-done','1');
+}
+
+/* ============================================================
+ * 7. 屏幕构建
+ * ============================================================ */
+function screenWrap(id,inner,nextId,nextLabel){
+  var s=document.createElement('section');
+  s.className='screen'; s.id=id;
+  s.innerHTML='<div class="screen-inner">'+inner+'</div>';
+  if(nextId){
+    var btn=document.createElement('button');
+    btn.className='next-btn';
+    btn.innerHTML=(nextLabel||'继续下一屏')+' <span aria-hidden="true">↓</span>';
+    btn.onclick=function(){ goToScreen(nextId); };
+    s.appendChild(btn);
+  }
+  return s;
+}
+
+/* --- 1. 启程屏 --- */
+function buildBoot(){
+  var d=defaultState();
+  var inner=''+
+    '<div class="center" style="margin-top:6vh">'+
+      '<div class="boot-title">漕运指挥官</div>'+
+      '<div class="boot-sub">中国大运河博物馆 · 大运河——中国的世界文化遗产</div>'+
+      '<div style="width:120px;height:120px;margin:10px auto">'+anlanSVG()+'</div>'+
+      '<p class="muted" style="max-width:560px;margin:0 auto">我是小河灵·安澜。今天，大运河要交给你一件重要的事——做一名「漕运指挥官」，养大一只会成长的水灵宠，一起走完这条千年运河。</p>'+
+    '</div>'+
+    '<div class="form-panel card" style="margin-top:18px;text-align:left">'+
+      '<div class="form-grid">'+
+        '<div class="form-row"><label for="inpCommander">你的指挥官代号</label><input id="inpCommander" type="text" maxlength="12" placeholder="例如：运河水手"></div>'+
+        '<div class="form-row"><label for="inpPet">给你的灵宠起个名字</label><input id="inpPet" type="text" maxlength="10" placeholder="例如：漕灵"></div>'+
+      '</div>'+
+      '<div class="form-row"><label>选择灵宠的初始形态（只影响外观，不影响能力）</label>'+
+        '<div class="form-choices" id="formChoices">'+
+          BASE_FORMS.map(function(f){
+            return '<button class="choice-card'+(f.key==='fish'?' sel':'')+'" data-form="'+f.key+'" type="button">'+
+              '<div>'+petSVG(1,f.color,{})+'</div><div class="nm">'+f.name+'</div><div class="ds">'+f.desc+'</div></button>';
+          }).join('')+
+        '</div>'+
+      '</div>'+
+      '<div class="center" style="margin-top:8px"><button class="btn verm" id="acceptBtn" style="font-size:18px;padding:13px 34px">接受任命</button></div>'+
+    '</div>';
+
+  var s=screenWrap('screen-boot',inner,null);
+  var chosen='fish';
+  setTimeout(function(){
+    var ci=$('#inpCommander',s), pi=$('#inpPet',s);
+    if(ci) ci.value=state.commander||'';
+    if(pi) pi.value=state.petName||'';
+    $$('.choice-card',s).forEach(function(c){
+      c.onclick=function(){
+        $$('.choice-card',s).forEach(function(x){ x.classList.remove('sel'); });
+        c.classList.add('sel'); chosen=c.getAttribute('data-form'); Sound.tap();
+      };
+    });
+    var ab=$('#acceptBtn',s);
+    if(ab) ab.onclick=function(){
+      var code=($('#inpCommander',s).value||'').trim();
+      if(!code) code=pick(['漕运小将','运河水手','小漕官','漕运少尉','运河巡查']);
+      var pn=($('#inpPet',s).value||'').trim() || '漕灵';
+      state.commander=code; state.petName=pn; state.baseForm=chosen;
+      log({type:'boot', artifactId:null, dim:null, energy:0, correct:null, text:'代号:'+code});
+      saveState(); renderHUD();
+      Sound.chord([523,659,784],0.5);
+      toast('任命成功！指挥官「'+code+'」');
+      setTimeout(function(){ goToScreen('screen-ch1-intro'); },420);
+    };
+  },0);
+  return s;
+}
+
+/* --- 章节引子屏 --- */
+function buildChapterIntro(ch, nextId){
+  var inner=''+
+    '<div class="chapter-hero">'+
+      '<div class="chapter-no">'+ch.no+'</div>'+
+      '<h1 class="chapter-name">'+ch.name+'</h1>'+
+      '<div class="chapter-part">'+ch.part+'</div>'+
+      '<div class="chapter-visual" style="width:150px;height:150px" id="introPet-'+ch.id+'">'+petSVG(stageFor(state.energy),petColor(),currentPersona()?{persona:currentPersona()}:{})+'</div>'+
+      '<div class="intro-bubble"><div class="who">小河灵·安澜 <span>引导者</span></div><p>'+ch.intro+'</p><button class="btn ghost sm" data-say="'+ch.id+'">🔊 听安澜说</button></div>'+
+      '<div class="center"><span class="energy-pill" id="introPill-'+ch.id+'">💧 时光/知识之力 待注入 +'+ch.energy+'</span></div>'+
+      '<div class="center" style="margin-top:14px"><button class="btn jade" id="introBtn-'+ch.id+'">注入能量，开始这一章</button></div>'+
+    '</div>';
+  var s=screenWrap('screen-ch1-intro-cross',inner,nextId);
+  s.id='screen-'+ch.id+'-intro';
+  setTimeout(function(){
+    var sayBtn=$('[data-say="'+ch.id+'"]',s);
+    if(sayBtn) sayBtn.onclick=function(){ Voice.speak(ch.intro,{force:true}); };
+    var btn=$('#introBtn-'+ch.id,s);
+    if(btn) btn.onclick=function(){
+      if(!state.introDone[ch.id]){
+        state.introDone[ch.id]=true;
+        log({type:'intro', artifactId:null, dim:ch.dim, energy:ch.energy, correct:null, chapter:ch.id});
+        addEnergy(ch.energy, ch.name+'之力');
+        var pill=$('#introPill-'+ch.id,s); if(pill) pill.textContent='💧 已注入 +'+ch.energy+' 能量';
+        var pv=$('#introPet-'+ch.id,s); if(pv){ pv.innerHTML=petSVG(stageFor(state.energy),petColor(),currentPersona()?{persona:currentPersona()}:{}); }
+        btn.textContent='能量已注入 ✓'; btn.disabled=true;
+      }
+      goToScreen(nextId);
+    };
+  },0);
+  return s;
+}
+
+/* --- 文物屏 --- */
+function buildArtifactScreen(art, nextId){
+  var ch=CHAPTER_BY_ID[art.chapter];
+  var inner=''+
+    '<div class="art-head">'+
+      '<div class="art-visual" aria-hidden="false">'+artSVG(art.svgKey)+'</div>'+
+      '<div>'+
+        '<div class="art-name">'+esc(art.name)+'</div>'+
+        '<div class="art-meta">🕰 '+esc(art.era)+' ｜ 📍 '+esc(art.hall)+'</div>'+
+        '<div class="row" style="margin:4px 0 6px"><span class="tag">'+ch.no+'</span><span class="tag gold">'+DIM_LABEL[art.reward.dim]+'</span><span class="tag jade">奖励 +'+art.reward.energy+' 能量</span></div>'+
+        '<div class="anlan-say"><div class="who">小河灵·安澜 <span>引导者</span></div><p>'+esc(art.artIntro)+'</p>'+
+        '<div class="row" style="margin-top:8px"><button class="btn ghost sm" data-say-art="'+art.id+'">🔊 听安澜讲解</button><button class="btn ghost sm" data-say-facts="'+art.id+'">🔊 听知识卡</button></div></div>'+
+        '<div class="facts-toggle"><button class="btn ghost sm" data-facts="'+art.id+'">📖 展开知识卡</button></div>'+
+        '<div class="facts" id="facts-'+art.id+'"><ul>'+art.facts.map(function(f){ return '<li>'+esc(f)+'</li>'; }).join('')+'</ul></div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="taskHost-'+art.id+'">'+renderArtifactTask(art)+'</div>';
+  var s=screenWrap('screen-art-'+art.id, inner, nextId);
+  setTimeout(function(){
+    var sb=$('[data-say-art="'+art.id+'"]', s);
+    if(sb) sb.onclick=function(){ Voice.speak(art.name+'。'+art.artIntro,{force:true}); };
+    var sf=$('[data-say-facts="'+art.id+'"]', s);
+    if(sf) sf.onclick=function(){
+      var f=$('#facts-'+art.id,s); if(f && !f.classList.contains('open')){ f.classList.add('open'); var fb=$('[data-facts]',s); if(fb) fb.textContent='📖 收起知识卡'; }
+      Voice.speak(art.facts.join(' '),{force:true});
+    };
+    var fb=$('[data-facts]', s);
+    if(fb) fb.onclick=function(){
+      var f=$('#facts-'+art.id,s); if(!f) return;
+      f.classList.toggle('open');
+      fb.textContent=f.classList.contains('open')?'📖 收起知识卡':'📖 展开知识卡';
+      Sound.tap();
+    };
+    setupArtifactTask(art);
+  },0);
+  return s;
+}
+
+/* --- 中期提问屏 --- */
+var QUESTIONS=[
+  { id:0, kind:'感受类', text:'走了这么久，哪一件文物让你觉得古人最聪明？去它面前站一会儿，把你看到的、想到的、感受到的说给我听。' },
+  { id:1, kind:'想象类', text:'如果你是漕运指挥官，你最希望灵宠先学会哪一件宝物的本领？为什么？' },
+  { id:2, kind:'共情类', text:'运河边的人每天都很辛苦。你想对千年前的运丁、纤夫或工匠说一句什么话？' }
+];
+var ASK_REPLY=[
+  '谢谢你！我看到你眼睛里闪着光——古人藏起来的聪明，被你找到啦！',
+  '哇，你的愿望好棒！灵宠说：我记住啦，我们一起去学这件本领吧！',
+  '这句话，我帮你收藏进漕灵珠里了。千年前的人如果听见，一定会觉得很温暖。'
+];
+var askSel={}, askRec={}, askTmp={};
+
+/* 录音模块（优雅降级） */
+var Rec=(function(){
+  var stream=null, recorder=null, chunks=[], analyser=null, rafId=null, startTs=0, cb=null, ac=null;
+  function supported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+  function cleanup(){
+    if(rafId && window.cancelAnimationFrame) cancelAnimationFrame(rafId); rafId=null;
+    if(stream){ try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} stream=null; }
+    recorder=null; chunks=[]; analyser=null;
+  }
+  function start(handlers){
+    cb=handlers||{};
+    if(!supported()) return Promise.reject(new Error('unsupported'));
+    if(!window.isSecureContext){ /* file:// 下可能被拒，统一由 catch 处理 */ }
+    return navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+      stream=s;
+      recorder=new MediaRecorder(stream);
+      chunks=[];
+      recorder.ondataavailable=function(e){ if(e.data && e.data.size>0) chunks.push(e.data); };
+      recorder.onstop=function(){
+        var dur=(Date.now()-startTs)/1000;
+        cleanup();
+        if(cb && cb.onStop) cb.onStop(dur);
+      };
+      recorder.start();
+      startTs=Date.now();
+      try{
+        var AC=window.AudioContext||window.webkitAudioContext;
+        if(AC){ ac=ac||new AC(); var src=ac.createMediaStreamSource(stream); analyser=ac.createAnalyser(); analyser.fftSize=256; src.connect(analyser); }
+      }catch(e){ analyser=null; }
+      var data=analyser?new Uint8Array(analyser.frequencyBinCount):null;
+      function loop(){
+        var level=0.2;
+        if(analyser && data){ analyser.getByteFrequencyData(data); var sum=0; for(var k=0;k<data.length;k++){ sum+=data[k]; } level=sum/data.length/255; }
+        else { level=0.22+0.22*Math.abs(Math.sin(Date.now()/280)); }
+        if(cb && cb.onTick) cb.onTick((Date.now()-startTs)/1000, level);
+        rafId=requestAnimationFrame(loop);
+      }
+      loop();
+      return true;
+    });
+  }
+  function stop(){ try{ if(recorder && recorder.state!=='inactive') recorder.stop(); else cleanup(); }catch(e){ cleanup(); if(cb&&cb.onStop) cb.onStop((Date.now()-startTs)/1000); } }
+  function abort(){ try{ if(recorder && recorder.state!=='inactive'){ recorder.onstop=null; recorder.stop(); } }catch(e){} cleanup(); }
+  return { supported:supported, start:start, stop:stop, abort:abort };
+})();
+
+function matchKeywords(text, dim){
+  var hits=[], list=KEYWORDS[dim]||[];
+  var t=String(text||'');
+  list.forEach(function(kw){ if(t.indexOf(kw)>-1) hits.push(kw); });
+  return hits;
+}
+function extractKeywordDims(text){
+  var dims=[];
+  Object.keys(KEYWORDS).forEach(function(d){ if(matchKeywords(text,d).length) dims.push(d); });
+  return dims;
+}
+
+function buildAsk(){
+  var inner=''+
+    '<div class="center" style="margin-bottom:6px">'+
+      '<div class="chapter-no">中期 · 灵宠的提问</div>'+
+      '<h1 class="chapter-name" style="font-size:clamp(22px,5.5vw,34px)">灵宠开始问你啦</h1>'+
+      '<p class="muted" style="max-width:640px;margin:0 auto">你的灵宠长大了，它想听听你的想法。先选一件你觉得有关的文物，再对着它说你看到的和感受到的。</p>'+
+    '</div>'+
+    '<div id="askCards"></div>'+
+    '<div class="center" style="margin:18px 0"><button class="btn jade" id="toBirthBtn" style="font-size:17px;padding:12px 28px">✅ 完成提问，去迎接我的灵宠</button></div>';
+  var s=screenWrap('screen-ask',inner,'screen-birth');
+  setTimeout(function(){
+    var host=$('#askCards',s);
+    QUESTIONS.forEach(function(q,i){ host.appendChild(buildAskCard(q,i)); });
+    var b=$('#toBirthBtn',s);
+    if(b) b.onclick=function(){ goToScreen('screen-birth'); };
+  },0);
+  return s;
+}
+function buildAskCard(q,i){
+  var el=document.createElement('section');
+  el.className='card q-card'; el.id='askCard-'+i;
+  el.innerHTML=''+
+    '<div class="q-bubble">'+
+      '<div class="pet">'+petSVG(stageFor(state.energy),petColor(),currentPersona()?{persona:currentPersona()}:{})+'</div>'+
+      '<div class="txt"><b>灵宠「'+esc(state.petName||'漕灵')+'」问</b>（第 '+(i+1)+'/3 题 · '+q.kind+'）<br>'+esc(q.text)+'</div>'+
+    '</div>'+
+    '<div class="part-prompt" style="margin-top:14px">① 你觉得哪一件文物和这个问题有关？点一下它</div>'+
+    '<div class="art-grid" id="askGrid-'+i+'">'+
+      ARTIFACTS.map(function(a){ return '<button class="art-chip" data-art="'+a.id+'" type="button">'+artSVG(a.svgKey)+'<div class="nm">'+esc(a.name)+'</div></button>'; }).join('')+
+    '</div>'+
+    '<div class="part-prompt">② 说说你观察到的和感受到的</div>'+
+    '<div id="recArea-'+i+'"></div>'+
+    '<div class="row" style="margin-top:10px"><button class="btn ghost sm" id="skipBtn-'+i+'">⏭ 跳过这题</button></div>';
+  setTimeout(function(){ mountAskCard(q,i,el); },0);
+  return el;
+}
+function mountAskCard(q,i,el){
+  if(state.ask[i] && state.ask[i].artifactId){ askSel[i]=state.ask[i].artifactId; }
+  $$('.art-chip',el).forEach(function(c){
+    if(askSel[i]===c.getAttribute('data-art')) c.classList.add('sel');
+    c.onclick=function(){
+      if(state.ask[i] && (state.ask[i].done||state.ask[i].skipped)) { toast('这题已经完成啦～'); return; }
+      $$('.art-chip',el).forEach(function(x){ x.classList.remove('sel'); });
+      c.classList.add('sel'); askSel[i]=c.getAttribute('data-art'); Sound.tap();
+    };
+  });
+  refreshRecArea(i, el);
+  var sb=$('#skipBtn-'+i,el);
+  if(sb) sb.onclick=function(){
+    if(state.ask[i] && state.ask[i].done){ toast('这题已经完成啦～'); return; }
+    state.ask[i]={ mode:'skip', done:false, skipped:true, artifactId:askSel[i]||null, durationSec:0, textLen:0, text:'', keywords:[] };
+    log({ type:'ask', q:i, artifactId:askSel[i]||null, dim:null, energy:0, correct:null, durationSec:0, textLen:0 });
+    Sound.tap(); refreshRecArea(i, el); renderHUD();
+    if(i===2) settleBirth(); /* 第 3 题跳过 → 同样确定性结算「灵宠诞生」（幂等） */
+    saveState();
+    toast('已跳过，我们继续下一题～');
+  };
+}
+function refreshRecArea(i, el){
+  var area=$('#recArea-'+i, el); if(!area) return;
+  var saved=state.ask[i];
+  if(saved && saved.done){
+    var echo=saved.aiReply||ASK_REPLY[i];
+    area.innerHTML='<div class="answer-echo">'+esc(echo)+' <button class="btn ghost sm" data-echo-say="'+i+'" style="padding:3px 10px;font-size:12px">🔊 再听一遍</button></div>'+
+      (saved.mode==='audio'
+        ? '<div class="note">🎙 你对着灵宠讲了「'+esc(saved.text||'')+'」，这份回答已经收进漕灵珠里。</div>'
+        : '<div class="note">✍️ 你写下了 '+saved.textLen+' 个字，安澜都记下来啦。</div>');
+    var esBtn=$('[data-echo-say="'+i+'"]',el);
+    if(esBtn) esBtn.onclick=function(){ Voice.speak(echo,{force:true}); };
+    return;
+  }
+  if(saved && saved.skipped){
+    area.innerHTML='<div class="note">⏭ 这题你跳过了，没关系，我们继续后面的问题。</div>';
+    return;
+  }
+  if(!Voice.sttSupported()){
+    area.innerHTML='<div class="note">这里听不到你的声音，我们改用文字记录：把想说的话写下来吧。</div>';
+    renderTextInput(i, el);
+    return;
+  }
+  area.innerHTML=''+
+    '<div class="rec-box">'+
+      '<div class="muted" style="font-size:14px">点下面的按钮，把你看到的、想到的说给灵宠听，安澜会帮你把话记下来。</div>'+
+      '<div class="stt-live" id="sttLive-'+i+'"></div>'+
+      '<div class="note">说完停顿一下就会自动识别。安静一点的地方效果更好哦～</div>'+
+      '<div class="row"><button class="btn sm" id="askStart-'+i+'">🎤 开始对灵宠说话</button>'+
+      '<button class="btn ghost sm" id="askTextMode-'+i+'">✍️ 改用文字</button></div>'+
+    '</div>';
+  var startBtn=$('#askStart-'+i,el), textBtn=$('#askTextMode-'+i,el);
+  if(startBtn) startBtn.onclick=function(){ startRec(i, el); };
+  if(textBtn) textBtn.onclick=function(){ renderTextInput(i, el); };
+}
+function renderTextInput(i, el){
+  var area=$('#recArea-'+i, el); if(!area) return;
+  area.innerHTML=''+
+    '<div class="rec-box">'+
+      '<div class="note">把你想对灵宠说的话写下来吧（至少 15 个字）。</div>'+
+      '<textarea id="askText-'+i+'" placeholder="我想说……"></textarea>'+
+      '<div class="row" style="margin-top:8px"><button class="btn sm" id="askTextSubmit-'+i+'">提交我的回答</button>'+
+      '<button class="btn ghost sm" id="askBackRec-'+i+'">🎙 回去试试录音</button></div>'+
+    '</div>';
+  var sbtn=$('#askTextSubmit-'+i,el), bbtn=$('#askBackRec-'+i,el);
+  if(bbtn) bbtn.onclick=function(){ refreshRecArea(i, el); };
+  if(sbtn) sbtn.onclick=function(){
+    var ta=$('#askText-'+i,el); var txt=ta?ta.value.trim():'';
+    if(txt.length<15){ toast('再多写一点点吧，至少 15 个字～'); return; }
+    submitAsk(i, el, { mode:'text', durationSec:0, text:txt });
+  };
+}
+function startRec(i, el){
+  var area=$('#recArea-'+i, el); if(!area) return;
+  area.innerHTML=''+
+    '<div class="rec-box">'+
+      '<div><span class="rec-dot"></span>安澜正在听…… 说完停一停就好</div>'+
+      '<div class="stt-live" id="sttLive-'+i+'"></div>'+
+      '<div class="note">识别完成后会请你确认，说得不对可以再说一次。</div>'+
+      '<div class="row"><button class="btn sm" id="askStop-'+i+'">✅ 我说完了</button>'+
+      '<button class="btn ghost sm" id="askGiveUp-'+i+'">取消，改用文字</button></div>'+
+    '</div>';
+  var session=Voice.listen({
+    onPartial:function(text){ var lv=$('#sttLive-'+i,el); if(lv) lv.textContent=text; },
+    onFinal:function(text,dur){ afterRec(i, el, text, dur); },
+    onError:function(){ renderTextInput(i, el); toast('这里听不到你的声音，我们改用文字记录～'); }
+  });
+  var stopBtn=$('#askStop-'+i,el), giveBtn=$('#askGiveUp-'+i,el);
+  if(stopBtn) stopBtn.onclick=function(){ session.stop(); };
+  if(giveBtn) giveBtn.onclick=function(){ session.cancel(); renderTextInput(i, el); };
+  setTimeout(function(){ session.stop(); }, 90000);
+}
+function afterRec(i, el, text, dur){
+  if(!text || text.trim().length<2){ toast('没听清，再对着灵宠多说几句～'); refreshRecArea(i, el); return; }
+  askRec[i]={dur:dur, text:text};
+  var area=$('#recArea-'+i, el);
+  area.innerHTML=''+
+    '<div class="answer-echo">🎙 灵宠听到你说：「'+esc(text)+'」</div>'+
+    '<div class="row" style="margin-top:8px"><button class="btn sm jade" id="askSubmit-'+i+'">提交我的回答</button>'+
+    '<button class="btn ghost sm" id="askRedo-'+i+'">🔁 再说一次</button></div>';
+  var sb=$('#askSubmit-'+i,el), rb=$('#askRedo-'+i,el);
+  if(rb) rb.onclick=function(){ refreshRecArea(i, el); };
+  if(sb) sb.onclick=function(){ submitAsk(i, el, { mode:'audio', durationSec:Math.max(3,Math.round(dur||3)), text:text }); };
+}
+function submitAsk(i, el, payload){
+  var kwDims=[], kwList=[];
+  if(payload.text){
+    kwDims=extractKeywordDims(payload.text);
+    Object.keys(KEYWORDS).forEach(function(d){ kwList=kwList.concat(matchKeywords(payload.text, d)); });
+  }
+  state.ask[i]={
+    mode:payload.mode, done:true, skipped:false,
+    artifactId:askSel[i]||null,
+    durationSec:payload.durationSec||0,
+    text:payload.text||'', textLen:(payload.text||'').length,
+    keywords:kwDims
+  };
+  log({ type:'ask', q:i, artifactId:askSel[i]||null, dim:(askSel[i]&&ART_BY_ID[askSel[i]]?ART_BY_ID[askSel[i]].reward.dim:null),
+        energy:30, correct:null, durationSec:payload.durationSec||0, textLen:(payload.text||'').length, keywords:kwDims });
+  Sound.correct();
+  addEnergy(30, '灵宠的提问 · 第 '+(i+1)+' 题');
+  refreshRecArea(i, el);
+  if(i===2) settleBirth(); /* 第 3 题提交完成 → 确定性结算「灵宠诞生」（幂等） */
+  saveState();
+  /* AI 个性化回应：配置好钥匙后，安澜会针对孩子的回答说出专属的话 */
+  if(Voice.aiReady() && payload.text){
+    var q=QUESTIONS[i], relArt=(askSel[i]&&ART_BY_ID[askSel[i]])?ART_BY_ID[askSel[i]]:null;
+    Voice.chat('小朋友的回答是：「'+payload.text+'」。请给他一个温暖、具体、不超过 60 字的回应：先肯定他的观察或感受，再顺着他的想法轻轻延展一句。',
+      '孩子正在回答灵宠的第 '+(i+1)+' 个提问：「'+q.text+'」。'+(relArt?('他联想到了文物《'+relArt.name+'》。'):''),
+      null,
+      function(err, reply){
+        if(!err && reply && state.ask[i]){
+          state.ask[i].aiReply=reply; saveState();
+          refreshRecArea(i, el);
+          Voice.speak(reply);
+        }
+      });
+  }else{
+    Voice.speak(ASK_REPLY[i]);
+  }
+}
+
+/* --- 后期：个性化灵宠诞生 --- */
+function computePersonality(){
+  var scores={ engineering:0, history:0, management:0, life:0 };
+  var notes=[];
+  state.ask.forEach(function(a,i){
+    if(!a) return;
+    if(a.artifactId && ART_BY_ID[a.artifactId]){
+      var d=ART_BY_ID[a.artifactId].reward.dim;
+      scores[d]+=2;
+      notes.push('第 '+(i+1)+' 题你选了《'+ART_BY_ID[a.artifactId].name+'》，它属于「'+DIM_LABEL[d]+'」（+2）');
+    }
+    if(a.keywords && a.keywords.length){
+      a.keywords.forEach(function(k){ if(scores[k]!=null){ scores[k]+=1; } });
+      notes.push('第 '+(i+1)+' 题你的回答里出现了与「'+a.keywords.map(function(k){ return DIM_LABEL[k]; }).join('、')+'」相关的词（+1）');
+    }
+  });
+  var arr=Object.keys(scores).map(function(k){ return {k:k,v:scores[k]}; }).sort(function(x,y){ return y.v-x.v; });
+  var key = (arr[0].v-arr[1].v<=1) ? 'balanced' : arr[0].k;
+  return { key:key, scores:scores, notes:notes, sorted:arr };
+}
+function recommendList(key){
+  if(key==='balanced'){
+    return [ RECOMMENDS.engineering[0], RECOMMENDS.history[0], RECOMMENDS.management[0], RECOMMENDS.life[0] ];
+  }
+  return RECOMMENDS[key]||RECOMMENDS.life;
+}
+function nameSuggestions(p){
+  var formName=(FORM_BY_KEY[state.baseForm]||BASE_FORMS[0]).name;
+  var selArt = state.ask.map(function(a){ return a&&a.artifactId?artShort(ART_BY_ID[a.artifactId].name):null; }).filter(Boolean);
+  var a1=p.name.replace('者','').replace('工程师','工程').replace('观察者','观察')+'·'+(state.petName||'漕灵');
+  var a2=(state.commander||'漕运小将')+'的'+p.name.slice(0,2)+'灵';
+  var a3=(selArt[0]||formName)+'小'+p.name.slice(-1);
+  return [a1,a2,a3];
+}
+function artShort(name){ return String(name).replace(/^「|」$/g,'').slice(0,4); }
+/* 保证性格已结算（纯派生数据，不发能量、不记日志），供渲染使用 */
+function ensurePersonality(){
+  if(state.personality) return;
+  var res=computePersonality();
+  state.personality=res.key; state.personaScores=res.scores; state.personaNotes=res.notes;
+  saveState();
+}
+/* 确定性结算「灵宠诞生」：发放 +20 加成并结算性格。以 state.birthBonus 为守卫，重复调用无副作用 */
+function settleBirth(){
+  ensurePersonality();
+  if(state.birthBonus) return;
+  state.birthBonus=true;
+  log({ type:'birth', artifactId:null, dim:state.personality, energy:20, correct:null });
+  addEnergy(20, '灵宠诞生加成');
+  saveState();
+}
+function buildBirth(){
+  var inner=''+
+    '<div class="center">'+
+      '<div class="chapter-no">后期 · 个性化灵宠诞生</div>'+
+      '<h1 class="chapter-name" style="font-size:clamp(22px,5.5vw,34px)">属于你的灵宠，诞生了！</h1>'+
+    '</div>'+
+    '<div id="birthBody"></div>'+
+    '<div class="center" style="margin:16px 0"><button class="btn" id="toReportBtn">📊 查看我的学习报告</button></div>';
+  var s=screenWrap('screen-birth',inner,'screen-report');
+  s.__onEnter=function(){ renderBirthBody(s); };
+  return s;
+}
+function renderBirthBody(s){
+  /* 纯渲染：只补齐派生数据（性格），业务结算已由 settleBirth() 在确定性时机完成 */
+  ensurePersonality();
+  var p=PERSONALITIES[state.personality]||PERSONALITIES.balanced;
+  var personaKey=p.key;
+  var body=$('#birthBody',s);
+  var names=nameSuggestions(p);
+  var recs=recommendList(personaKey);
+  var chosenName=state.chosenName||names[0];
+
+  var html=''+
+    '<div class="birth-hero card">'+
+      '<div class="center"><div style="width:190px;height:190px;margin:0 auto">'+petSVG(stageFor(state.energy), p.color, {persona:personaKey})+'</div>'+
+        '<div class="tag" style="background:'+p.color+'22;color:'+p.color+';margin-top:6px">'+p.name+'</div></div>'+
+      '<div>'+
+        '<h3 style="color:'+p.color+';font-size:22px">'+p.name+'</h3>'+
+        '<p class="muted">专属配色 <b style="color:'+p.color+'">'+p.color+'</b> ｜ 特征：'+esc(p.feature)+'</p>'+
+        '<p>口头禅：<b>「'+esc(p.motto)+'」</b></p>'+
+        '<div class="facts-toggle"><button class="btn ghost sm" id="whyBtn">🔎 灵宠为什么会这样？</button></div>'+
+        '<div class="facts" id="whyBox"><b>安澜的推理过程：</b><ul>'+
+          (state.personaNotes && state.personaNotes.length ? state.personaNotes.map(function(n){ return '<li>'+esc(n)+'</li>'; }).join('') : '<li>你还没有留下太多线索，于是灵宠长成了什么都会一点的「全能安澜使」。</li>')+
+          '<li>四维得分：'+['engineering','history','management','life'].map(function(d){ return DIM_LABEL[d]+' '+((state.personaScores&&state.personaScores[d])||0); }).join(' · ')+'</li>'+
+          '<li>最高分与次高分相差 ≤1 时判定为「全能安澜使」；否则取最高分维度作为性格。</li>'+
+        '</ul></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card" style="margin-top:16px">'+
+      '<h3 class="section-title" style="margin-top:0">灵宠的专属名字（点一下选它）</h3>'+
+      '<div id="nameBox">'+names.map(function(n,idx){ return '<span class="name-chip'+(n===chosenName?' sel':'')+'" data-name="'+esc(n)+'">'+esc(n)+'</span>'; }).join('')+'</div>'+
+      '<div class="note">你也可以继续用原来的名字「'+esc(state.petName||'漕灵')+'」。</div>'+
+    '</div>'+
+    '<h3 class="section-title">推荐给你的创作方式</h3>'+
+    '<p class="muted" style="margin-top:-4px">根据你的回答，安澜为你挑了 '+recs.length+' 种记录方式。选一种，来完成「我和灵宠的第一次见面」吧！</p>'+
+    '<div class="rec-cards" id="recCards">'+
+      recs.map(function(r,idx){
+        return '<button class="rec-card'+(state.choiceCreation===r.name?' sel':'')+'" data-rec="'+esc(r.name)+'" type="button">'+
+          '<h4>'+esc(r.name)+'</h4>'+
+          '<div class="why">为什么推荐给你：'+esc(recWhy(personaKey, idx))+'</div>'+
+          '<div class="muted" style="font-size:13px">具体怎么做：</div>'+
+          '<ol>'+r.how.map(function(h){ return '<li>'+esc(h)+'</li>'; }).join('')+'</ol>'+
+          '<div class="time">⏱ 预计用时：'+esc(r.time)+'</div>'+
+        '</button>';
+      }).join('')+
+    '</div>'+
+    '<div id="meetHost" style="margin-top:18px"></div>';
+
+  body.innerHTML=html;
+
+  var whyBtn=$('#whyBtn',body); if(whyBtn) whyBtn.onclick=function(){ $('#whyBox',body).classList.toggle('open'); Sound.tap(); };
+  $$('.name-chip',body).forEach(function(c){
+    c.onclick=function(){
+      $$('.name-chip',body).forEach(function(x){ x.classList.remove('sel'); });
+      c.classList.add('sel'); state.chosenName=c.getAttribute('data-name'); saveState(); Sound.tap();
+      renderMeetCard(body);
+    };
+  });
+  $$('.rec-card',body).forEach(function(c){
+    c.onclick=function(){
+      $$('.rec-card',body).forEach(function(x){ x.classList.remove('sel'); });
+      c.classList.add('sel'); state.choiceCreation=c.getAttribute('data-rec'); saveState(); Sound.correct();
+      renderMeetCard(body);
+      var mh=$('#meetHost',body); if(mh) mh.scrollIntoView({behavior:'smooth',block:'center'});
+    };
+  });
+  if(state.choiceCreation) renderMeetCard(body);
+}
+function recWhy(personaKey, idx){
+  var selArt='';
+  for(var i=0;i<state.ask.length;i++){
+    if(state.ask[i] && state.ask[i].artifactId && ART_BY_ID[state.ask[i].artifactId]){ selArt=ART_BY_ID[state.ask[i].artifactId].name; break; }
+  }
+  var key=personaKey==='balanced'? ['engineering','history','management','life'][idx%4] : personaKey;
+  var why={
+    engineering:'你在回答里对「'+ (selArt||'古人的办法') +'」充满好奇，动手做一做最能帮你想明白。',
+    history:'你喜欢追问「以前是怎样的」，把时间画出来正合适。',
+    management:'你关心「排好队、讲规矩」，用角色扮演来体验一次规则最有趣。',
+    life:'你的回答里有温度和感受，用画笔或文字把这些心情留下来吧。'
+  };
+  return why[key];
+}
+function renderMeetCard(body){
+  var host=$('#meetHost',body); if(!host) return;
+  var p=PERSONALITIES[state.personality]||PERSONALITIES.balanced;
+  var name=state.chosenName||state.petName||'漕灵';
+  var rec=state.choiceCreation||'画下和灵宠的第一次见面';
+  host.innerHTML=''+
+    '<div class="meet-card">'+
+      '<div class="seal">'+sealSVG()+'</div>'+
+      '<h3>我和灵宠的第一次见面</h3>'+
+      '<div class="meet-grid">'+
+        '<div class="k">日期</div><div class="v">'+fmtDate(new Date())+'</div>'+
+        '<div class="k">指挥官代号</div><div class="v">'+esc(state.commander||'漕运小将')+'</div>'+
+        '<div class="k">灵宠名字</div><div class="v">'+esc(name)+'</div>'+
+        '<div class="k">灵宠性格</div><div class="v">'+p.name+'</div>'+
+        '<div class="k">创作方式</div><div class="v">'+esc(rec)+'</div>'+
+      '</div>'+
+      '<div class="row" style="align-items:center">'+
+        '<div style="width:110px;height:110px">'+petSVG(stageFor(state.energy), p.color, {persona:p.key})+'</div>'+
+        '<div style="flex:1;min-width:180px"><div class="note" style="margin:0">安澜寄语：'+esc(p.motto)+' 愿你和 '+esc(name)+' 一起，把大运河的智慧装进心里。</div></div>'+
+      '</div>'+
+      '<div class="lines">'+
+        '写下或画下：我们第一次见面时……'+
+        '<div class="line-blank"></div><div class="line-blank"></div><div class="line-blank"></div>'+
+      '</div>'+
+      '<div class="center no-print" style="margin-top:12px"><button class="btn gold" id="printCardBtn">🖨 打印 / 保存这张卡片</button></div>'+
+    '</div>';
+  var pb=$('#printCardBtn',host);
+  if(pb) pb.onclick=function(){ try{ window.print(); }catch(e){ toast('可以手动使用浏览器打印功能保存这张卡片～'); } };
+}
+
+/* --- 评估报告屏 --- */
+function buildReport(){
+  var inner=''+
+    '<div class="center">'+
+      '<div class="chapter-no">评估板块</div>'+
+      '<h1 class="chapter-name" style="font-size:clamp(22px,5.5vw,34px)">我的学习报告</h1>'+
+    '</div>'+
+    '<div id="reportBody"></div>';
+  var s=screenWrap('screen-report',inner,null);
+  s.__onEnter=function(){ renderReport(s); };
+  return s;
+}
+function reportStats(){
+  var totalParts=0, rightParts=0;
+  var audioSec=0, textLen=0, audioCount=0;
+  ARTIFACTS.forEach(function(a){
+    var t=state.tasks[a.id];
+    if(t && t.submitted){ totalParts+=t.total; rightParts+=t.right; }
+  });
+  state.ask.forEach(function(a){
+    if(!a) return;
+    if(a.durationSec) audioSec+=a.durationSec;
+    if(a.textLen) textLen+=a.textLen;
+    if(a.mode==='audio' && a.done) audioCount++;
+  });
+  var acc = totalParts>0 ? Math.round(rightParts/totalParts*100) : 0;
+  var elapsed = Math.round(((state.finishTime||Date.now())-state.startTime)/1000);
+  return { totalParts:totalParts, rightParts:rightParts, acc:acc, audioSec:audioSec, textLen:textLen, audioCount:audioCount, elapsed:elapsed };
+}
+function radarScores(){
+  var dims=['history','engineering','management','life'];
+  var out={};
+  dims.forEach(function(d){
+    var arts=ARTIFACTS.filter(function(a){ return a.reward.dim===d; });
+    var right=0,totalAll=0,doneArts=0;
+    arts.forEach(function(a){
+      var t=state.tasks[a.id];
+      totalAll+=a.task.parts.length;
+      if(t && t.submitted){ doneArts++; right+=t.right; }
+    });
+    var acc = totalAll>0 ? right/totalAll : 0;
+    var comp = arts.length? doneArts/arts.length : 0;
+    var v = Math.round(100*(0.7*acc+0.3*comp));
+    out[d]= isFinite(v)?clamp(v,0,100):0;
+  });
+  return out;
+}
+function radarSVG(radar){
+  var cx=170, cy=150, R=100;
+  var dims=['history','engineering','management','life'];
+  var ang=[-90,0,90,180];
+  var labels={ history:'历史演变', engineering:'水工智慧', management:'国家管理', life:'生活百态' };
+  function pt(i,val){ var a=ang[i]*Math.PI/180, r=R*clamp(val,0,100)/100; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+  var grid='';
+  [25,50,75,100].forEach(function(g){
+    var pts=dims.map(function(_,i){ var p=pt(i,g); return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
+    grid+='<polygon points="'+pts+'" fill="none" stroke="#BEE3F0" stroke-width="1"/>';
+  });
+  var axes='';
+  dims.forEach(function(_,i){ var p=pt(i,100); axes+='<line x1="'+cx+'" y1="'+cy+'" x2="'+p[0].toFixed(1)+'" y2="'+p[1].toFixed(1)+'" stroke="#BEE3F0" stroke-width="1"/>'; });
+  var dpts=dims.map(function(d,i){ var p=pt(i,radar[d]); return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
+  var poly='<polygon points="'+dpts+'" fill="rgba(46,134,193,.26)" stroke="#2E86C1" stroke-width="2.5"/>';
+  var dots=dims.map(function(d,i){ var p=pt(i,radar[d]); return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4.5" fill="#C8963E" stroke="#fff" stroke-width="1.5"/>'; }).join('');
+  var lbl='';
+  var anch=['middle','start','middle','end'];
+  var voff=[-8,4,-8,4];
+  dims.forEach(function(d,i){ var p=pt(i,118); lbl+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+voff[i]).toFixed(1)+'" text-anchor="'+anch[i]+'" font-size="13" font-weight="700" fill="#14313D">'+labels[d]+'</text>'; });
+  return '<svg viewBox="0 0 340 300" role="img" aria-label="四维学习雷达图：历史演变、水工智慧、国家管理、生活百态" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto">'+grid+axes+poly+dots+lbl+'</svg>';
+}
+function computeBadges(){
+  var s=reportStats();
+  var ps=persistenceStats();
+  var obsAll = isArtAllCorrect('shuanglong') && isArtAllCorrect('bianhe');
+  var engFull=0, mgmtFull=0;
+  ARTIFACTS.forEach(function(a){
+    if(a.reward.dim==='engineering' && isArtAllCorrect(a.id)) engFull++;
+    if(a.reward.dim==='management' && isArtAllCorrect(a.id)) mgmtFull++;
+  });
+  var q3 = state.ask[2] && state.ask[2].done;
+  var detective = state.tasks['bianhe'] && state.tasks['bianhe'].answers && (function(){
+    var a=ART_BY_ID['bianhe'].task.parts[0], ans=state.tasks['bianhe'].answers[0];
+    return a && ans!=null && a.options[ans] && a.options[ans].correct;
+  })();
+  return [
+    { ico:'🔍', title:'观察之星', hint:'把观察/计数类题目全部答对', on:!!obsAll },
+    { ico:'🏗', title:'水工小匠', hint:'水工智慧的文物 ≥2 件全部答对', on:engFull>=2 },
+    { ico:'📜', title:'制度通', hint:'国家管理的文物全部答对', on:mgmtFull>=2 },
+    { ico:'🗣', title:'表达达人', hint:'完成 3 次录音，或文字累计 ≥60 字', on:(s.audioCount>=3)||(s.textLen>=60) },
+    { ico:'💗', title:'共情之心', hint:'完成第 3 题（对运河人说句话）', on:!!q3 },
+    { ico:'🧭', title:'寻宝侦探', hint:'找出「展厅里最大的文物」汴河剖面', on:!!detective },
+    { ico:'⚓', title:'全程指挥官', hint:'10 件文物全部完成', on:completedCount()===10 },
+    { ico:'🌟', title:'灵宠挚友', hint:'灵宠达到第 3 阶以上', on:stageFor(state.energy)>=3 },
+    { ico:'💪', title:'再来一次', hint:'第一次没找对后，重新尝试并成功', on:ps.retryWins>=1 }
+  ];
+}
+function isArtAllCorrect(id){ var t=state.tasks[id]; return !!(t && t.submitted && t.correct); }
+function buildPraise(){
+  var out=[];
+  /* 1. 文物相关（真实数据） */
+  var perfect=ARTIFACTS.filter(function(a){ return isArtAllCorrect(a.id); });
+  if(perfect.length){
+    var first=perfect[0];
+    out.push('你在《'+first.name+'》的挑战里 '+first.task.parts.length+' 题全对，安澜说：你的小脑瓜转得又快又准！');
+  }
+  if(state.tasks['bianhe'] && state.tasks['bianhe'].answers && (function(){
+    var a=ART_BY_ID['bianhe'].task.parts[0], ans=state.tasks['bianhe'].answers[0];
+    return a && ans!=null && a.options[ans] && a.options[ans].correct;
+  })()){
+    out.push('你在展厅里一眼就找出了最大的文物《汴河剖面》——横宽 25.7 米、纵高 8 米，你是名副其实的寻宝侦探！');
+  }
+  if(isArtAllCorrect('nanwang')){
+    out.push('你在「南旺分水枢纽」读懂了「七分朝天子、三分下江南」的奥秘，观察力像探照灯一样亮！');
+  }
+  /* 1.5 坚持力（首次未答对、最终答对）——引用真实文物名与真实尝试次数 */
+  var ps=persistenceStats();
+  ps.wins.slice(0,2).forEach(function(w){
+    var art2=ART_BY_ID[w.artifactId]; if(!art2) return;
+    var pt=art2.task.parts[w.partIndex];
+    out.push('你在《'+art2.name+'》'+wrongPhrase(pt)+'，但你没有放弃——第'+cnNum(w.attempts)+'次就找对了，这份「再想一想」的勇气，比一次答对更了不起！');
+  });
+  /* 2. 表达相关 */
+  var maxDur=0, maxIdx=-1;
+  state.ask.forEach(function(a,i){ if(a && a.durationSec>maxDur){ maxDur=a.durationSec; maxIdx=i; } });
+  if(maxDur>0){
+    var kw=[];
+    state.ask.forEach(function(a){ if(a && a.keywords) a.keywords.forEach(function(k){ if(kw.indexOf(DIM_LABEL[k])<0) kw.push(DIM_LABEL[k]); }); });
+    out.push('你对着灵宠讲了 '+fmtDur(maxDur)+(kw.length?('，说出的话题和「'+kw.join('、')+'」有关'):'')+'——你真的在认真思考古人的办法！');
+  }
+  var s=reportStats();
+  if(s.textLen>0){
+    out.push('你一共写下了 '+s.textLen+' 个字交给灵宠，每一个字都被安澜收进了漕灵珠里。');
+  }
+  /* 3. 成长相关 */
+  var st=stageFor(state.energy);
+  out.push('你的灵宠已经长到第 '+st+' 阶「'+STAGE_INFO[st].name+'」，能量 '+state.energy+'，这一路你照顾得真好！');
+  /* 4. 完成度 */
+  var cc=completedCount();
+  if(cc>=10){ out.push('你走完了全部 10 件文物，从历史演变到生活百态——你是大运河的全程指挥官！'); }
+  else if(cc>0){ out.push('你已经认识了 '+cc+' 件文物，剩下的几件也在展厅里等着和你会面。'); }
+  else { out.push('探险才刚刚开始，安澜会一直陪着你，我们一件一件慢慢看。'); }
+  /* 去重并限制 3-6 条 */
+  var seen={}, res=[];
+  out.forEach(function(t){ if(!seen[t]){ seen[t]=1; res.push(t); } });
+  return res.slice(0,6);
+}
+function renderReport(s){
+  ensurePersonality(); /* 纯派生数据，保证渲染一致；不发放能量 */
+  state.finishTime=state.finishTime||Date.now();
+  if(!state.reportSeen){ state.reportSeen=true; saveState(); }
+  var st=reportStats();
+  var radar=radarScores();
+  var badges=computeBadges();
+  var praise=buildPraise();
+  var ps=persistenceStats();
+  var p=PERSONALITIES[state.personality]||PERSONALITIES.balanced;
+  var stg=stageFor(state.energy);
+  var body=$('#reportBody',s);
+
+  var html=''+
+    '<div class="report-grid" aria-label="总览数据">'+
+      '<div class="card big-stat"><b>'+state.energy+'</b><small class="muted">总能量值</small></div>'+
+      '<div class="card big-stat"><b>'+completedCount()+'/10</b><small class="muted">完成文物</small></div>'+
+      '<div class="card big-stat"><b>阶 '+stg+'</b><small class="muted">灵宠阶位 · '+STAGE_INFO[stg].name+'</small></div>'+
+      '<div class="card big-stat"><b>'+fmtDur(st.elapsed)+'</b><small class="muted">总用时</small></div>'+
+      '<div class="card big-stat"><b>'+fmtDur(st.audioSec)+'</b><small class="muted">录音总时长</small></div>'+
+      '<div class="card big-stat"><b>'+st.textLen+' 字</b><small class="muted">文字总字数</small></div>'+
+      '<div class="card big-stat"><b>'+st.acc+'%</b><small class="muted">任务正确率</small></div>'+
+      '<div class="card big-stat"><b>'+p.name+'</b><small class="muted">灵宠性格</small></div>'+
+      '<div class="card big-stat"><b>'+st.audioCount+' 次</b><small class="muted">完成录音</small></div>'+
+    '</div>'+
+
+    '<h3 class="section-title">四维学习雷达图</h3>'+
+    '<div class="radar-wrap card">'+
+      '<div>'+radarSVG(radar)+'</div>'+
+      '<div><ul class="kp-list" style="list-style:none;padding:0">'+
+        ['history','engineering','management','life'].map(function(d){
+          return '<li style="display:flex;justify-content:space-between;border-bottom:1px dashed #DCEBF2;padding:8px 0">'+
+            '<span>'+DIM_LABEL[d]+'</span><b style="color:#2E86C1">'+radar[d]+' / 100</b></li>';
+        }).join('')+
+      '</ul><div class="note">分数 = 该维度答对比例 × 70% + 该维度文物完成度 × 30%（范围内 0–100）。</div></div>'+
+    '</div>'+
+
+    '<h3 class="section-title">能力徽章</h3>'+
+    '<div class="badge-grid">'+
+      badges.map(function(b){
+        return '<div class="badge '+(b.on?'on':'')+'"><div class="ico">'+b.ico+'</div><div class="bt">'+b.title+'</div>'+
+          '<div class="bh">'+(b.on?'已点亮 🎉':'如何获得：'+esc(b.hint))+'</div></div>';
+      }).join('')+
+    '</div>'+
+
+    '<h3 class="section-title">坚持力</h3>'+
+    '<div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">'+
+      '<div style="font-size:30px;line-height:1">💪</div>'+
+      '<div style="font-size:16px;font-weight:700;color:#1B5E8A">'+esc(persistLine(ps))+'</div>'+
+    '</div>'+
+
+    '<h3 class="section-title">安澜给你的点赞 <button class="btn ghost sm spk-inline" id="praiseSayBtn">🔊 听安澜夸我</button></h3>'+
+    '<div id="praiseBox">'+praise.map(function(t,idx){ return '<div class="praise '+(idx%2?'warm':'')+'">💚 '+esc(t)+'</div>'; }).join('')+'</div>'+
+
+    '<h3 class="section-title">给家长 / 老师的一页小结</h3>'+
+    '<div class="card">'+
+      '<h4 style="color:#1B5E8A">本次学习覆盖的知识点</h4>'+
+      '<div class="kp-list">'+
+        CHAPTERS.map(function(ch){
+          return '<div style="margin-top:8px"><b>'+ch.no+' · '+ch.name+'</b><ul>'+
+            ARTIFACTS.filter(function(a){ return a.chapter===ch.id; }).map(function(a){
+              return '<li><b>'+esc(a.name)+'</b>（'+esc(a.era)+'）：'+esc(a.facts[0])+'</li>';
+            }).join('')+
+          '</ul></div>';
+        }).join('')+
+      '</div>'+
+      '<h4 style="color:#1B5E8A;margin-top:14px">兴趣倾向</h4>'+
+      '<p>孩子的灵宠长成了「<b style="color:'+p.color+'">'+p.name+'</b>」。四维得分：'+
+        ['engineering','history','management','life'].map(function(d){ return DIM_LABEL[d]+' '+((state.personaScores&&state.personaScores[d])||0); }).join(' · ')+
+        '。兴趣最浓的方向是：<b>'+DIM_LABEL[state.personality==='balanced'?'life':state.personality]+'</b>。</p>'+
+      '<h4 style="color:#1B5E8A;margin-top:12px">建议的延伸活动</h4>'+
+      '<ul class="kp-list">'+recommendList(p.key).map(function(r){ return '<li>'+esc(r.name)+'（'+esc(r.time)+'）</li>'; }).join('')+'</ul>'+
+      '<div class="row" style="margin-top:12px">'+
+        '<button class="btn sm" id="exportBtn">⬇ 导出为文本</button>'+
+        '<button class="btn ghost sm" id="copyBtn">📋 复制到剪贴板</button>'+
+        '<button class="btn verm sm" id="restartBtn">🔄 重新开始一次探险</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="height:30px"></div>';
+
+  body.innerHTML=html;
+
+  var eb=$('#exportBtn',body); if(eb) eb.onclick=exportReport;
+  var psay=$('#praiseSayBtn',body); if(psay) psay.onclick=function(){ Voice.speak(praise.join(' '),{force:true}); };
+  var cb=$('#copyBtn',body); if(cb) cb.onclick=copyReport;
+  var rb=$('#restartBtn',body); if(rb) rb.onclick=function(){
+    if(window.confirm('确定要清空这次的探险记录，重新开始吗？')){ resetState(); try{ window.location.reload(); }catch(e){ goToScreen('screen-boot'); } }
+  };
+}
+function reportText(){
+  var st=reportStats(), radar=radarScores(), badges=computeBadges(), ps=persistenceStats();
+  var p=PERSONALITIES[state.personality]||PERSONALITIES.balanced;
+  var lines=[];
+  lines.push('漕运指挥官 · 学习报告');
+  lines.push('生成时间：'+fmtDate(new Date()));
+  lines.push('指挥官代号：'+(state.commander||'漕运小将')+'　灵宠：'+(state.chosenName||state.petName||'漕灵'));
+  lines.push('');
+  lines.push('【总览】');
+  lines.push('总能量：'+state.energy+'　灵宠阶位：第 '+stageFor(state.energy)+' 阶 '+STAGE_INFO[stageFor(state.energy)].name);
+  lines.push('完成文物：'+completedCount()+'/10　总用时：'+fmtDur(st.elapsed));
+  lines.push('任务正确率：'+st.acc+'%　录音总时长：'+fmtDur(st.audioSec)+'　文字总字数：'+st.textLen);
+  lines.push('');
+  lines.push('【四维雷达】');
+  ['history','engineering','management','life'].forEach(function(d){ lines.push('　'+DIM_LABEL[d]+'：'+radar[d]+'/100'); });
+  lines.push('');
+  lines.push('【能力徽章】');
+  badges.forEach(function(b){ lines.push('　'+(b.on?'[已点亮] ':'[待点亮] ')+b.title); });
+  lines.push('');
+  lines.push('【坚持力】');
+  lines.push('　'+persistLine(ps)+(ps.retryWins>0?('（首次未答对、最终答对的小问：'+ps.retryWins+' 个）'):''));
+  lines.push('');
+  lines.push('【灵宠性格】'+p.name+'（'+p.feature+'）');
+  lines.push('口头禅：'+p.motto);
+  lines.push('');
+  lines.push('【知识点覆盖】');
+  CHAPTERS.forEach(function(ch){
+    lines.push(ch.no+' '+ch.name);
+    ARTIFACTS.filter(function(a){ return a.chapter===ch.id; }).forEach(function(a){ lines.push('　· '+a.name+'（'+a.era+'）：'+a.facts[0]); });
+  });
+  lines.push('');
+  lines.push('【建议延伸活动】');
+  recommendList(p.key).forEach(function(r){ lines.push('　· '+r.name+'（'+r.time+'）'); });
+  return lines.join('\n');
+}
+function exportReport(){
+  try{
+    var text=reportText();
+    var blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='漕运指挥官学习报告.txt';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },200);
+    toast('报告已导出为文本文件～');
+  }catch(e){ toast('导出失败，可以手动复制下面的内容～'); }
+}
+function copyReport(){
+  var text=reportText();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast('已复制到剪贴板～'); },function(){ fallbackCopy(text); });
+  }else{ fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  try{
+    var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('已复制到剪贴板～');
+  }catch(e){ toast('复制失败，请手动选择文本～'); }
+}
+
+/* ============================================================
+ * 8. 导航 / 滚动 / 安澜
+ * ============================================================ */
+var ART_NAV={};
+ARTIFACTS.forEach(function(a){
+  ART_NAV['screen-art-'+a.id] = a.chapter==='ch1'?1 : a.chapter==='ch2'?2 : a.chapter==='ch3'?3 : 4;
+});
+function navIndexFor(id){
+  if(id==='screen-boot') return 0;
+  if(id==='screen-ch1-intro') return 1;
+  if(id==='screen-ch2-intro') return 2;
+  if(id==='screen-ch3-intro') return 3;
+  if(id==='screen-ch4-intro') return 4;
+  if(id==='screen-ask') return 5;
+  if(id==='screen-birth') return 6;
+  if(id==='screen-report') return 7;
+  if(ART_NAV[id]!=null) return ART_NAV[id];
+  return 0;
+}
+function buildNav(){
+  var nav=$('#chapterNav');
+  nav.innerHTML=NAV.map(function(n){ return '<button class="nav-item" data-target="'+n.id+'"><span class="dot"></span><span class="nl">'+n.label+'</span></button>'; }).join('');
+  $$('.nav-item',nav).forEach(function(b){ b.onclick=function(){ goToScreen(b.getAttribute('data-target')); }; });
+}
+function setActiveNav(idx){
+  var items=$$('#chapterNav .nav-item');
+  items.forEach(function(b,i){ b.classList.toggle('active', i===idx); });
+}
+function goToScreen(id){
+  var el=document.getElementById(id); if(!el) return;
+  /* 确定性结算：无论平滑跳还是瞬时跳，只要目标为「诞生」或「报告」就结算诞生（幂等，只加一次） */
+  if(id==='screen-birth' || id==='screen-report'){ settleBirth(); }
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+  if(el.__onEnter && state.lastEnter!==id){ setTimeout(function(){ if(el.__onEnter){ el.__onEnter(); } },260); }
+  /* 语音导览：进入文物屏 / 章节屏时自动朗读安澜的讲解 */
+  if(Voice.cfg.autoRead){
+    var artId=id.indexOf('screen-art-')===0? id.slice(11):null;
+    if(artId && ART_BY_ID[artId]){
+      setTimeout(function(){ Voice.speak(ART_BY_ID[artId].name+'。'+ART_BY_ID[artId].artIntro); }, 450);
+    }else if(/-intro$/.test(id)){
+      var chId=id.replace('screen-','').replace('-intro','');
+      if(CHAPTER_BY_ID[chId]) setTimeout(function(){ Voice.speak(CHAPTER_BY_ID[chId].intro); }, 450);
+    }else if(id==='screen-ask'){
+      setTimeout(function(){ Voice.speak('你的灵宠长大了，它有三个问题想问你。可以先点一件文物，再按住麦克风，把你看到的、想到的说出来。'); }, 450);
+    }
+  }
+}
+var ANLAN_TIPS=[
+  '慢慢来，先看看文物的样子，再想一想它有什么用。',
+  '答错了也没关系，看看知识卡，你就又变聪明一点啦。',
+  '别忘了给你的灵宠起个好听的名字哦。',
+  '对着麦克风说话时，可以先深呼吸，再慢慢讲。',
+  '点右边的圆点，可以快速跳到不同的章节。',
+  '你的每一次回答，灵宠都记在心里啦。'
+];
+/* ---------- 安澜 AI 对话舱 ---------- */
+var dockHistory=[], dockSession=null, dockGreeted=false;
+function currentCtxNote(){
+  var mid=window.innerHeight*0.4, found=null;
+  $$('.screen').forEach(function(el){ var r=el.getBoundingClientRect(); if(r.top<mid && r.bottom>mid) found=el.id; });
+  if(!found) return '';
+  if(found.indexOf('screen-art-')===0){
+    var a=ART_BY_ID[found.slice(11)];
+    if(a) return '孩子正在看文物《'+a.name+'》（'+a.era+'）。安澜的讲解词：'+a.artIntro;
+  }
+  if(/-intro$/.test(found)){
+    var c=CHAPTER_BY_ID[found.replace('screen-','').replace('-intro','')];
+    if(c) return '孩子正在'+c.no+'「'+c.name+'」的开头。';
+  }
+  if(found==='screen-ask') return '孩子正在回答灵宠的三个提问。';
+  if(found==='screen-birth') return '孩子的灵宠刚刚诞生，性格是「'+(PERSONALITIES[state.personality]?PERSONALITIES[state.personality].name:'')+'」。';
+  if(found==='screen-report') return '孩子正在看自己的学习报告。';
+  return '';
+}
+function dockAdd(role, text){
+  var body=$('#dockBody'); if(!body) return null;
+  var d=document.createElement('div');
+  d.className='dock-msg '+role; d.textContent=text;
+  body.appendChild(d); body.scrollTop=body.scrollHeight;
+  return d;
+}
+function dockGreet(){
+  if(dockGreeted) return; dockGreeted=true;
+  var hi='你好呀，'+(state.commander||'小指挥官')+'！我是安澜。看到什么有趣的，随时问我哦～';
+  dockAdd('anlan', hi);
+  if(!Voice.aiReady()) dockAdd('sys','还没有配 AI 钥匙：点右上角小齿轮 ⚙ 填上 API Key，安澜会变得更聪明');
+  Voice.speak(hi);
+}
+function toggleDock(force){
+  var dock=$('#dock'); if(!dock) return;
+  var open=force!=null? force : !dock.classList.contains('open');
+  dock.classList.toggle('open', open);
+  if(open){ Sound.gentle(); dockGreet(); var inp=$('#dockInput'); if(inp) inp.focus(); }
+  else { Voice.stopSpeak(); if(dockSession){ dockSession.cancel(); dockSession=null; var mb=$('#dockMic'); if(mb) mb.classList.remove('on'); } }
+}
+function dockSend(text){
+  text=String(text||'').trim();
+  if(!text) return;
+  dockAdd('me', text);
+  dockHistory.push({role:'user', content:text});
+  var thinking=dockAdd('sys','安澜想了想……');
+  if(Voice.aiReady()){
+    Voice.chat(text, currentCtxNote(), dockHistory, function(err, reply){
+      if(thinking) thinking.remove();
+      if(err){
+        var msg='哎呀，我的 AI 钥匙好像失灵了（'+err.message+'）。检查一下设置里的 Key 和网络吧～';
+        dockAdd('anlan', msg); Voice.speak(msg); return;
+      }
+      dockHistory.push({role:'assistant', content:reply});
+      dockAdd('anlan', reply);
+      Voice.speak(reply);
+    });
+  }else{
+    setTimeout(function(){
+      if(thinking) thinking.remove();
+      var reply=Voice.localChat(text, currentCtxNote());
+      dockHistory.push({role:'assistant', content:reply});
+      dockAdd('anlan', reply);
+      Voice.speak(reply);
+    }, 420);
+  }
+}
+function setupAnlan(){
+  var fab=$('#anlanFab'), tip=$('#anlanTip');
+  fab.innerHTML=anlanSVG();
+  fab.setAttribute('aria-label','小河灵安澜，点击和它说话');
+
+  /* 对话舱 */
+  var dock=document.createElement('div');
+  dock.className='dock'; dock.id='dock';
+  dock.innerHTML=''+
+    '<div class="dock-head"><div class="ava">'+anlanSVG()+'</div>'+
+      '<div class="tt"><b>问问安澜</b><small>大运河向导 · 打字或语音都可以</small></div>'+
+      '<button class="dock-close" id="dockClose" aria-label="关闭对话">×</button></div>'+
+    '<div class="dock-body" id="dockBody"></div>'+
+    '<div class="dock-foot">'+
+      '<button class="dock-btn mic" id="dockMic" title="按住说话（点一下开始，说完自动识别）">🎤</button>'+
+      '<input id="dockInput" type="text" placeholder="想问安澜什么？" autocomplete="off">'+
+      '<button class="dock-btn send" id="dockSend" title="发送">➤</button>'+
+    '</div>';
+  document.body.appendChild(dock);
+
+  fab.onclick=function(){ toggleDock(); };
+  $('#dockClose').onclick=function(){ toggleDock(false); };
+  $('#dockSend').onclick=function(){
+    var inp=$('#dockInput'); dockSend(inp.value); inp.value='';
+  };
+  $('#dockInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ e.preventDefault(); dockSend(this.value); this.value=''; }
+  });
+  $('#dockMic').onclick=function(){
+    var mb=$('#dockMic'), inp=$('#dockInput');
+    if(dockSession){ dockSession.stop(); return; }
+    if(!Voice.sttSupported()){ toast('这个浏览器听不到声音，打字问我也可以哦～'); return; }
+    mb.classList.add('on'); mb.textContent='🔴';
+    dockSession=Voice.listen({
+      onPartial:function(t){ inp.value=t; },
+      onFinal:function(t){
+        mb.classList.remove('on'); mb.textContent='🎤'; dockSession=null;
+        if(t){ inp.value=''; dockSend(t); } else { toast('没听清，再点一次试试～'); }
+      },
+      onError:function(){
+        mb.classList.remove('on'); mb.textContent='🎤'; dockSession=null;
+        toast('这里听不到你的声音，打字问我也可以哦～');
+      }
+    });
+  };
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape'){ toggleDock(false); Voice.stopSpeak(); }
+  });
+}
+
+/* ---------- 语音与 AI 设置面板 ---------- */
+var VOICE_PRESETS={
+  openai:   { base:'https://api.openai.com/v1',                          model:'gpt-4o-mini' },
+  deepseek: { base:'https://api.deepseek.com/v1',                        model:'deepseek-chat' },
+  moonshot: { base:'https://api.moonshot.cn/v1',                         model:'moonshot-v1-8k' },
+  zhipu:    { base:'https://open.bigmodel.cn/api/paas/v4',               model:'glm-4-flash' },
+  qwen:     { base:'https://dashscope.aliyuncs.com/compatible-mode/v1',  model:'qwen-turbo' }
+};
+function refreshVoiceKeyDot(){
+  var b=$('#voiceSetBtn'); if(b) b.classList.toggle('need-key', !Voice.aiReady());
+}
+function setupVoiceUI(){
+  var mask=document.createElement('div');
+  mask.className='vset-mask'; mask.id='vsetMask';
+  mask.innerHTML=''+
+    '<div class="vset card" role="dialog" aria-label="语音与 AI 设置">'+
+      '<h3>⚙ 语音与 AI 设置</h3>'+
+      '<div class="vsub">配上大模型钥匙（API Key）后，安澜就能真正听懂并回答孩子的问题。不配也能玩：讲解朗读和语音答题照常可用。</div>'+
+      '<div class="frow"><label>服务商预设</label><select id="vPreset">'+
+        '<option value="">自定义</option>'+
+        '<option value="openai">OpenAI</option>'+
+        '<option value="deepseek">DeepSeek</option>'+
+        '<option value="moonshot">Kimi（Moonshot）</option>'+
+        '<option value="zhipu">智谱 GLM</option>'+
+        '<option value="qwen">通义千问（兼容模式）</option>'+
+      '</select></div>'+
+      '<div class="frow"><label>API Base URL</label><input type="text" id="vBase" placeholder="https://api.openai.com/v1" spellcheck="false"></div>'+
+      '<div class="frow"><label>API Key</label><input type="password" id="vKey" placeholder="sk-..." autocomplete="off" spellcheck="false"></div>'+
+      '<div class="frow"><label>模型</label><input type="text" id="vModel" placeholder="gpt-4o-mini" spellcheck="false"></div>'+
+      '<div class="frow"><label>朗读语速 <span id="vRateVal">1.0</span></label><input type="range" id="vRate" min="0.6" max="1.6" step="0.1"></div>'+
+      '<label class="chk"><input type="checkbox" id="vTts"> 安澜的话自动读出来</label>'+
+      '<label class="chk"><input type="checkbox" id="vAutoRead"> 进入新章节 / 文物时自动朗读讲解</label>'+
+      '<div class="vhint">Key 只保存在这台设备的浏览器里（localStorage），除你配置的服务商外不会发给任何人。语音在展馆里建议戴耳机使用。GitHub Pages 等 HTTPS 环境均可正常使用麦克风。</div>'+
+      '<div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn sm" id="vClose">完成</button></div>'+
+    '</div>';
+  document.body.appendChild(mask);
+
+  var c=Voice.cfg;
+  $('#vBase').value=c.base||''; $('#vKey').value=c.key||''; $('#vModel').value=c.model||'';
+  $('#vRate').value=c.rate||1; $('#vRateVal').textContent=(c.rate||1).toFixed(1);
+  $('#vTts').checked=c.ttsOn!==false; $('#vAutoRead').checked=c.autoRead!==false;
+
+  $('#vPreset').onchange=function(e){
+    var p=VOICE_PRESETS[e.target.value];
+    if(p){ $('#vBase').value=p.base; $('#vModel').value=p.model; syncVoiceCfg(); }
+  };
+  function syncVoiceCfg(){
+    c.base=$('#vBase').value.trim(); c.key=$('#vKey').value.trim(); c.model=$('#vModel').value.trim();
+    Voice.save(); refreshVoiceKeyDot();
+  }
+  ['vBase','vKey','vModel'].forEach(function(id){ $('#'+id).addEventListener('input', syncVoiceCfg); });
+  $('#vRate').addEventListener('input', function(){ c.rate=parseFloat(this.value); $('#vRateVal').textContent=c.rate.toFixed(1); Voice.save(); });
+  $('#vTts').addEventListener('change', function(){ c.ttsOn=this.checked; Voice.save(); if(!c.ttsOn) Voice.stopSpeak(); });
+  $('#vAutoRead').addEventListener('change', function(){ c.autoRead=this.checked; Voice.save(); });
+  $('#vClose').onclick=function(){ mask.classList.remove('open'); if(Voice.aiReady()) toast('AI 钥匙配好啦，安澜变聪明了！'); };
+  mask.addEventListener('click', function(e){ if(e.target===mask) mask.classList.remove('open'); });
+
+  $('#voiceSetBtn').onclick=function(){ mask.classList.add('open'); Sound.tap(); };
+  refreshVoiceKeyDot();
+}
+
+/* ============================================================
+ * 9. 初始化
+ * ============================================================ */
+function init(){
+  state=loadState();
+  var scroller=$('#scroller');
+
+  /* 按顺序构建 18 屏 */
+  scroller.appendChild(buildBoot());                                                   /* 1  */
+  scroller.appendChild(buildChapterIntro(CHAPTERS[0],'screen-art-tongcuo'));            /* 2  */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.tongcuo,'screen-art-shuanglong'));/* 3  */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.shuanglong,'screen-art-bianhe')); /* 4  */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.bianhe,'screen-ch2-intro'));      /* 5  */
+  scroller.appendChild(buildChapterIntro(CHAPTERS[1],'screen-art-nanwang'));           /* 6  */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.nanwang,'screen-art-changan'));   /* 7  */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.changan,'screen-art-hongqiao'));  /* 8  */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.hongqiao,'screen-ch3-intro'));    /* 9  */
+  scroller.appendChild(buildChapterIntro(CHAPTERS[2],'screen-art-gongshu'));           /* 10 */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.gongshu,'screen-art-buzi'));      /* 11 */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.buzi,'screen-ch4-intro'));        /* 12 */
+  scroller.appendChild(buildChapterIntro(CHAPTERS[3],'screen-art-yanpan'));            /* 13 */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.yanpan,'screen-art-qingyunlou')); /* 14 */
+  scroller.appendChild(buildArtifactScreen(ART_BY_ID.qingyunlou,'screen-ask'));        /* 15 */
+  scroller.appendChild(buildAsk());                                                    /* 16 */
+  scroller.appendChild(buildBirth());                                                  /* 17 */
+  scroller.appendChild(buildReport());                                                 /* 18 */
+
+  buildNav();
+  setupAnlan();
+  setupVoiceUI();
+  renderHUD();
+
+  /* 首屏可见 */
+  var first=$('#screen-boot'); if(first) first.classList.add('visible');
+
+  /* 滚动监听 */
+  var lastActive=null;
+  if(window.IntersectionObserver){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting && e.intersectionRatio>0.15){ e.target.classList.add('visible'); }
+        if(e.isIntersecting && e.intersectionRatio>0.55){
+          var id=e.target.id;
+          if(id!==lastActive){
+            lastActive=id;
+            setActiveNav(navIndexFor(id));
+            if(e.target.__onEnter) e.target.__onEnter();
+          }
+        }
+      });
+    },{ root:scroller, threshold:[0.15,0.55,0.85] });
+    $$('.screen',scroller).forEach(function(sc){ io.observe(sc); });
+  }else{
+    $$('.screen',scroller).forEach(function(sc){ sc.classList.add('visible'); });
+  }
+
+  /* 若已有存档，恢复 HUD 数值 */
+  renderHUD();
+}
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+
+})();
+</script>
+</body>
+</html>
+
